@@ -3,8 +3,23 @@ import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem, Blog } from '@/types';
 import { ShoppingCart, Globe, Tag, Info, AlertCircle, FileText, Link as LinkIcon, Edit3, ChevronRight, Star, XCircle } from 'lucide-react';
 
+interface PaymentChannel {
+    group: string;
+    code: string;
+    name: string;
+    type: string;
+    fee_merchant: { flat: number, percent: string };
+    fee_customer: { flat: number, percent: string };
+    total_fee: { flat: number, percent: string };
+    minimum_fee: number;
+    maximum_fee: number;
+    icon_url: string;
+    active: boolean;
+}
+
 interface Props {
     blog: Blog;
+    paymentChannels: PaymentChannel[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -13,7 +28,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Checkout', href: '#' },
 ];
 
-export default function Checkout({ blog }: Props) {
+export default function Checkout({ blog, paymentChannels = [] }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         blog_id: blog.id,
         links: [{ link: '', anchor: '' }],
@@ -21,6 +36,7 @@ export default function Checkout({ blog }: Props) {
         instructions: '',
         doc_link: '',
         notes: '',
+        payment_method: '', // New field for Tripay channel code
     });
 
     const submit = (e: React.FormEvent) => {
@@ -170,9 +186,46 @@ export default function Checkout({ blog }: Props) {
                                 />
                             </div>
 
+                            <div className="pt-5 border-t border-gray-100">
+                                <label className="block text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                    Metode Pembayaran
+                                </label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                    {paymentChannels.length > 0 ? (
+                                        paymentChannels.map((channel) => (
+                                            <button
+                                                key={channel.code}
+                                                type="button"
+                                                onClick={() => setData('payment_method', channel.code)}
+                                                className={`p-3 rounded-xl border-2 text-center transition-all flex flex-col items-center justify-center gap-2 ${
+                                                    data.payment_method === channel.code 
+                                                        ? 'border-teal-500 bg-teal-50 shadow-sm' 
+                                                        : 'border-gray-100 hover:border-teal-200 bg-white'
+                                                }`}
+                                            >
+                                                <img 
+                                                    src={channel.icon_url} 
+                                                    alt={channel.name} 
+                                                    className="h-6 object-contain"
+                                                />
+                                                <span className={`text-[11px] font-semibold ${data.payment_method === channel.code ? 'text-teal-700' : 'text-gray-600'}`}>
+                                                    {channel.name}
+                                                </span>
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="col-span-full py-4 text-center text-sm text-gray-500 bg-gray-50 rounded-xl border border-gray-200">
+                                            Tidak ada metode pembayaran tersedia saat ini.
+                                        </div>
+                                    )}
+                                </div>
+                                {/* @ts-ignore */}
+                                {errors.payment_method && <p className="text-xs text-red-500 mt-2">{errors.payment_method}</p>}
+                            </div>
+
                             <button
                                 type="submit"
-                                disabled={processing}
+                                disabled={processing || !data.payment_method}
                                 className="w-full py-3.5 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl shadow-sm hover:shadow transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-base"
                             >
                                 {processing ? 'Memproses...' : 'Lanjutkan Pembayaran'}

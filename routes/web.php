@@ -94,11 +94,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('web-saya', [WebSayaController::class , 'index'])->name('publisher.web-saya.index');
         Route::post('web-saya', [WebSayaController::class , 'store'])->name('publisher.web-saya.store');
         Route::post('withdrawals', [\App\Http\Controllers\Publisher\WithdrawalController::class , 'store'])->name('publisher.withdrawals.store');
+        Route::patch('orders/{order}/publish', [\App\Http\Controllers\Publisher\OrderController::class , 'publish'])->name('publisher.orders.publish');
         Route::get('pemasukkan', function () {
             $user = auth()->user();
 
             // Fetch all orders where the associated blog belongs to the current user
-            $pemasukkan = \App\Models\Order::with(['blog', 'user'])
+            $pemasukkan = \App\Models\Order::with(['blog', 'user', 'links'])
                 ->whereHas('blog', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             }

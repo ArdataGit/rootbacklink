@@ -23,8 +23,12 @@ class OrderController extends Controller
 
     public function checkout(Blog $blog)
     {
+        $tripay = app(TripayService::class);
+        $paymentChannels = $tripay->getPaymentChannels();
+
         return Inertia::render('advertiser/checkout', [
             'blog' => $blog->load('category'),
+            'paymentChannels' => $paymentChannels,
         ]);
     }
 
@@ -39,6 +43,7 @@ class OrderController extends Controller
             'links' => 'required|array|min:1|max:4',
             'links.*.link' => 'required|url',
             'links.*.anchor' => 'required|string',
+            'payment_method' => 'required|string',
         ]);
 
         $blog = Blog::findOrFail($validated['blog_id']);
@@ -70,6 +75,7 @@ class OrderController extends Controller
         // Create Tripay transaction
         $tripay = app(TripayService::class);
         $result = $tripay->createTransaction([
+            'method' => $validated['payment_method'],
             'merchant_ref' => $invoiceId,
             'amount' => (int)$blog->price,
             'customer_name' => $user->name,

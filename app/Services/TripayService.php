@@ -26,62 +26,74 @@ class TripayService
      * Create a closed transaction on Tripay.
      */
     public function createTransaction(array $params): array
-    {
-        $merchantRef = $params['merchant_ref'];
-        $amount = (int)$params['amount'];
+{
+    $merchantRef = $params['merchant_ref'];
+    $amount = (int)$params['amount'];
 
-        $signatureString = $this->merchantCode . $merchantRef . $amount;
-        $signature = hash_hmac('sha256', $signatureString, $this->privateKey);
+    $signatureString = $this->merchantCode . $merchantRef . $amount;
+    $signature = hash_hmac('sha256', $signatureString, $this->privateKey);
 
-        Log::info('Tripay signature debug', [
-            'merchant_code' => $this->merchantCode,
-            'merchant_ref' => $merchantRef,
-            'amount' => $amount,
-            'signature_string' => $signatureString,
-        ]);
+    Log::info('Tripay signature debug', [
+        'merchant_code' => $this->merchantCode,
+        'merchant_ref' => $merchantRef,
+        'amount' => $amount,
+        'signature_string' => $signatureString,
+        'signature' => $signature
+    ]);
 
-        $payload = [
-            'method' => $params['method'] ?? 'QRIS',
-            'merchant_ref' => $merchantRef,
-            'amount' => $amount,
-            'customer_name' => $params['customer_name'],
-            'customer_email' => $params['customer_email'],
-            'customer_phone' => $params['customer_phone'] ?? '',
-            'order_items' => $params['order_items'],
-            'callback_url' => route('tripay.callback'),
-            'return_url' => $params['return_url'] ?? route('advertiser.transaksi'),
-            'expired_time' => (int)(now()->addDay()->timestamp),
-            'signature' => $signature,
+    $payload = [
+        'method' => $params['method'] ?? 'QRIS',
+        'merchant_code' => $this->merchantCode,
+        'merchant_ref' => $merchantRef,
+        'amount' => $amount,
+        'customer_name' => $params['customer_name'],
+        'customer_email' => $params['customer_email'],
+        'customer_phone' => $params['customer_phone'] ?? '',
+        'order_items' => $params['order_items'],
+        'callback_url' => route('tripay.callback'),
+        'return_url' => $params['return_url'] ?? route('advertiser.transaksi'),
+        'expired_time' => now()->addDay()->timestamp,
+        'signature' => $signature,
+    ];
+
+    try {
+
+        Log::info('Tripay payload', $payload);
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $this->apiKey,
+        ])->post($this->baseUrl . '/transaction/create', $payload);
+
+        $body = $response->json();
+
+        Log::info('Tripay response', $body);
+
+        if ($response->successful() && isset($body['success']) && $body['success']) {
+            return [
+                'success' => true,
+                'data' => $body['data'],
+            ];
+        }
+
+        Log::error('Tripay create transaction failed', ['response' => $body]);
+
+        return [
+            'success' => false,
+            'message' => $body['message'] ?? 'Failed to create Tripay transaction.',
         ];
 
-        try {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
-            ])->post($this->baseUrl . '/transaction/create', $payload);
+    } catch (\Exception $e) {
 
-            $body = $response->json();
+        Log::error('Tripay create transaction exception', [
+            'error' => $e->getMessage()
+        ]);
 
-            if ($response->successful() && isset($body['success']) && $body['success']) {
-                return [
-                    'success' => true,
-                    'data' => $body['data'],
-                ];
-            }
-
-            Log::error('Tripay create transaction failed', ['response' => $body]);
-            return [
-                'success' => false,
-                'message' => $body['message'] ?? 'Failed to create Tripay transaction.',
-            ];
-        }
-        catch (\Exception $e) {
-            Log::error('Tripay create transaction exception', ['error' => $e->getMessage()]);
-            return [
-                'success' => false,
-                'message' => 'Tripay service unavailable: ' . $e->getMessage(),
-            ];
-        }
+        return [
+            'success' => false,
+            'message' => 'Tripay service unavailable: ' . $e->getMessage(),
+        ];
     }
+}
 
     /**
      * Verify the callback signature from Tripay.
