@@ -154,7 +154,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Admin Routes
         Route::middleware(['admin'])->prefix('admin')->group(function () {
             Route::get('blogs', [\App\Http\Controllers\Admin\BlogController::class , 'index'])->name('admin.blogs.index');
+            Route::post('blogs', [\App\Http\Controllers\Admin\BlogController::class , 'store'])->name('admin.blogs.store');
+            Route::patch('blogs/{blog}', [\App\Http\Controllers\Admin\BlogController::class , 'update'])->name('admin.blogs.update');
             Route::patch('blogs/{blog}/status', [\App\Http\Controllers\Admin\BlogController::class , 'updateStatus'])->name('admin.blogs.update-status');
+            Route::delete('blogs/{blog}', [\App\Http\Controllers\Admin\BlogController::class , 'destroy'])->name('admin.blogs.destroy');
 
             Route::get('categories', [\App\Http\Controllers\Admin\CategoryController::class , 'index'])->name('admin.categories.index');
             Route::post('categories', [\App\Http\Controllers\Admin\CategoryController::class , 'store'])->name('admin.categories.store');

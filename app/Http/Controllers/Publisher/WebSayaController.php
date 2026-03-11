@@ -52,15 +52,15 @@ class WebSayaController extends Controller
             'domain' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'price' => 'required|numeric|min:0',
-            'da' => 'required|integer|min:0',
-            'pa' => 'required|integer|min:0',
-            'ss' => 'required|integer|min:0|max:100',
-            'traffic' => 'required|integer|min:0',
-            'indexing' => 'required|in:yes,no',
         ]);
 
         $validated['user_id'] = auth()->id();
         $validated['status'] = 'pending';
+        $validated['da'] = 0;
+        $validated['pa'] = 0;
+        $validated['ss'] = 0;
+        $validated['traffic'] = 0;
+        $validated['indexing'] = 'no';
 
         Blog::create($validated);
 
