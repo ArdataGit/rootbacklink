@@ -36,7 +36,8 @@ class OrderController extends Controller
     {
         $validated = $request->validate([
             'blog_id' => 'required|exists:blogs,id',
-            'article_source' => 'required|in:publisher,advertiser',
+            'backlink_type' => 'required|in:authority,sidebar',
+            'article_source' => 'required_if:backlink_type,authority|in:publisher,advertiser|nullable',
             'instructions' => 'required_if:article_source,publisher',
             'doc_link' => 'required_if:article_source,advertiser',
             'notes' => 'nullable|string',
@@ -49,17 +50,32 @@ class OrderController extends Controller
         $blog = Blog::findOrFail($validated['blog_id']);
         $user = auth()->user();
 
+        // Calculate Price
+        $totalPrice = 0;
+        if ($validated['backlink_type'] === 'authority') {
+            $totalPrice = $validated['article_source'] === 'publisher' 
+                          ? $blog->price_authority_publisher 
+                          : $blog->price_authority_advertiser;
+        } else {
+            $totalPrice = $blog->price_sidebar;
+        }
+
+        if (!$totalPrice || $totalPrice <= 0) {
+            return redirect()->back()->withErrors(['backlink_type' => 'Harga backlink tidak valid atau belum diatur oleh publisher.']);
+        }
+
         $invoiceId = 'INV-' . strtoupper(uniqid());
 
         $order = Order::create([
             'user_id' => $user->id,
             'blog_id' => $blog->id,
             'invoice_id' => $invoiceId,
-            'total' => $blog->price,
-            'article_source' => $validated['article_source'],
+            'total' => $totalPrice,
+            'backlink_type' => $validated['backlink_type'],
+            'article_source' => $validated['article_source'] ?? null,
             'instructions' => $validated['instructions'] ?? null,
             'doc_link' => $validated['doc_link'] ?? null,
-            'notes' => $validated['notes'],
+            'notes' => $validated['notes'] ?? null,
             'status' => 'unpaid',
         ]);
 
@@ -77,15 +93,15 @@ class OrderController extends Controller
         $result = $tripay->createTransaction([
             'method' => $validated['payment_method'],
             'merchant_ref' => $invoiceId,
-            'amount' => (int)$blog->price,
+            'amount' => (int)$totalPrice,
             'customer_name' => $user->name,
             'customer_email' => $user->email,
             'customer_phone' => $user->whatsapp ?? '',
             'return_url' => route('advertiser.transaksi'),
             'order_items' => [
                 [
-                    'name' => 'Backlink - ' . $blog->domain,
-                    'price' => (int)$blog->price,
+                    'name' => 'Backlink ' . ucfirst($validated['backlink_type']) . ' - ' . $blog->domain,
+                    'price' => (int)$totalPrice,
                     'quantity' => 1,
                 ],
             ],

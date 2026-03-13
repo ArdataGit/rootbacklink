@@ -35,6 +35,9 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $waNumber = \App\Models\Setting::where('key', 'wa_number')->value('value') ?? '';
+        $waMessage = \App\Models\Setting::where('key', 'wa_message')->value('value') ?? 'Halo Admin, saya ingin bertanya tentang Backlink.';
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -42,6 +45,10 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'waSettings' => [
+                'number' => $waNumber,
+                'message' => $waMessage,
+            ],
         ];
     }
 }

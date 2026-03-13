@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import AppLogoIcon from '@/components/app-logo-icon';
-import { home } from '@/routes';
+import { login } from '@/routes';
+import WaWidget from '@/components/wa-widget';
 import type { AuthLayoutProps } from '@/types';
 
 export default function AuthSimpleLayout({
@@ -18,7 +19,7 @@ export default function AuthSimpleLayout({
                 <div className="flex flex-col gap-8">
                     <div className="flex flex-col items-center gap-4">
                         <Link
-                            href={home()}
+                            href={login.url()}
                             className="flex flex-col items-center gap-3 font-medium group"
                         >
                             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400 to-emerald-500 shadow-md shadow-teal-400/20 group-hover:shadow-teal-400/40 transition-all duration-300 group-hover:scale-105">
@@ -39,6 +40,7 @@ export default function AuthSimpleLayout({
                     {children}
                 </div>
             </div>
+            <WaWidget />
         </div>
     );
 }

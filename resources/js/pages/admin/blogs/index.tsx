@@ -27,7 +27,12 @@ export default function BlogIndex({ blogs, users, categories }: Props) {
         user_id: '',
         domain: '',
         category_id: '',
-        price: '',
+        has_backlink_authority: false,
+        price_authority_publisher: '',
+        price_authority_advertiser: '',
+        has_backlink_sidebar: false,
+        price_sidebar: '',
+        sidebar_duration: '',
         da: '0',
         pa: '0',
         ss: '0',
@@ -42,7 +47,12 @@ export default function BlogIndex({ blogs, users, categories }: Props) {
         ss: '0',
         traffic: '0',
         indexing: 'no',
-        price: '0',
+        has_backlink_authority: false,
+        price_authority_publisher: '',
+        price_authority_advertiser: '',
+        has_backlink_sidebar: false,
+        price_sidebar: '',
+        sidebar_duration: '',
     });
 
     const openEditModal = (blog: Blog) => {
@@ -53,7 +63,12 @@ export default function BlogIndex({ blogs, users, categories }: Props) {
             ss: String(blog.ss),
             traffic: String(blog.traffic),
             indexing: blog.indexing,
-            price: String(blog.price),
+            has_backlink_authority: blog.has_backlink_authority,
+            price_authority_publisher: String(blog.price_authority_publisher || ''),
+            price_authority_advertiser: String(blog.price_authority_advertiser || ''),
+            has_backlink_sidebar: blog.has_backlink_sidebar,
+            price_sidebar: String(blog.price_sidebar || ''),
+            sidebar_duration: String(blog.sidebar_duration || ''),
         });
         setIsEditModalOpen(true);
     };
@@ -134,7 +149,7 @@ export default function BlogIndex({ blogs, users, categories }: Props) {
                                     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">DA / PA / SS</th>
                                     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Trafik</th>
                                     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Index</th>
-                                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Harga</th>
+                                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Jenis & Harga</th>
                                     <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                                     <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Aksi</th>
                                 </tr>
@@ -182,8 +197,21 @@ export default function BlogIndex({ blogs, users, categories }: Props) {
                                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-500">Tidak</span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold">
-                                                Rp {blog.price.toLocaleString()}
+                                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                <div className="flex flex-col items-end gap-1">
+                                                    {blog.has_backlink_authority && (
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-[10px] text-gray-400">Auth:</span>
+                                                            <span className="text-xs font-bold text-gray-700">Rp {Number(blog.price_authority_advertiser).toLocaleString()}</span>
+                                                        </div>
+                                                    )}
+                                                    {blog.has_backlink_sidebar && (
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-[10px] text-gray-400">Side:</span>
+                                                            <span className="text-xs font-bold text-gray-700">Rp {Number(blog.price_sidebar).toLocaleString()}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-center">
                                                 {getStatusBadge(blog.status)}
@@ -269,12 +297,46 @@ export default function BlogIndex({ blogs, users, categories }: Props) {
                                         </select>
                                         {createForm.errors.category_id && <p className="mt-1 text-xs text-red-500">{createForm.errors.category_id}</p>}
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-600 mb-1">Harga (Rp)</label>
-                                        <input type="number" value={createForm.data.price} onChange={e => createForm.setData('price', e.target.value)}
-                                            className={inputCls(!!createForm.errors.price)} placeholder="250000" />
-                                        {createForm.errors.price && <p className="mt-1 text-xs text-red-500">{createForm.errors.price}</p>}
+                                </div>
+
+                                {/* Backlink Authority */}
+                                <div className="border rounded-xl p-4 bg-gray-50 space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <input type="checkbox" id="create_has_authority" checked={createForm.data.has_backlink_authority} onChange={e => createForm.setData('has_backlink_authority', e.target.checked)} className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500" />
+                                        <label htmlFor="create_has_authority" className="font-bold text-gray-700 text-sm">Backlink Authority (Artikel)</label>
                                     </div>
+                                    {createForm.data.has_backlink_authority && (
+                                        <div className="grid grid-cols-2 gap-3 pl-8">
+                                            <div>
+                                                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Harga Publisher (Rp)</label>
+                                                <input type="number" value={createForm.data.price_authority_publisher} onChange={e => createForm.setData('price_authority_publisher', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="250000" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Harga Advertiser (Rp)</label>
+                                                <input type="number" value={createForm.data.price_authority_advertiser} onChange={e => createForm.setData('price_authority_advertiser', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="200000" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Backlink Sidebar */}
+                                <div className="border rounded-xl p-4 bg-gray-50 space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <input type="checkbox" id="create_has_sidebar" checked={createForm.data.has_backlink_sidebar} onChange={e => createForm.setData('has_backlink_sidebar', e.target.checked)} className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500" />
+                                        <label htmlFor="create_has_sidebar" className="font-bold text-gray-700 text-sm">Backlink Sidebar</label>
+                                    </div>
+                                    {createForm.data.has_backlink_sidebar && (
+                                        <div className="grid grid-cols-2 gap-3 pl-8">
+                                            <div>
+                                                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Harga Jual (Rp)</label>
+                                                <input type="number" value={createForm.data.price_sidebar} onChange={e => createForm.setData('price_sidebar', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="500000" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Durasi (Hari)</label>
+                                                <input type="number" value={createForm.data.sidebar_duration} onChange={e => createForm.setData('sidebar_duration', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="30" />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-3 gap-3 border-y border-gray-100 py-4">
@@ -376,11 +438,42 @@ export default function BlogIndex({ blogs, users, categories }: Props) {
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-600 mb-1">Harga Jual (Rp)</label>
-                                    <input type="number" value={editForm.data.price} onChange={e => editForm.setData('price', e.target.value)}
-                                        className={inputCls(!!editForm.errors.price)} placeholder="250000" />
-                                    {editForm.errors.price && <p className="mt-1 text-xs text-red-500">{editForm.errors.price}</p>}
+                                <div className="border rounded-xl p-4 bg-gray-50 space-y-3 pt-4">
+                                    <div className="flex items-center gap-3">
+                                        <input type="checkbox" id="edit_has_authority" checked={editForm.data.has_backlink_authority} onChange={e => editForm.setData('has_backlink_authority', e.target.checked)} className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500" />
+                                        <label htmlFor="edit_has_authority" className="font-bold text-gray-700 text-sm">Backlink Authority (Artikel)</label>
+                                    </div>
+                                    {editForm.data.has_backlink_authority && (
+                                        <div className="grid grid-cols-2 gap-3 pl-8">
+                                            <div>
+                                                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Harga Publisher (Rp)</label>
+                                                <input type="number" value={editForm.data.price_authority_publisher} onChange={e => editForm.setData('price_authority_publisher', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="250000" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Harga Advertiser (Rp)</label>
+                                                <input type="number" value={editForm.data.price_authority_advertiser} onChange={e => editForm.setData('price_authority_advertiser', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="200000" />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="border rounded-xl p-4 bg-gray-50 space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <input type="checkbox" id="edit_has_sidebar" checked={editForm.data.has_backlink_sidebar} onChange={e => editForm.setData('has_backlink_sidebar', e.target.checked)} className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500" />
+                                        <label htmlFor="edit_has_sidebar" className="font-bold text-gray-700 text-sm">Backlink Sidebar</label>
+                                    </div>
+                                    {editForm.data.has_backlink_sidebar && (
+                                        <div className="grid grid-cols-2 gap-3 pl-8">
+                                            <div>
+                                                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Harga Jual (Rp)</label>
+                                                <input type="number" value={editForm.data.price_sidebar} onChange={e => editForm.setData('price_sidebar', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="500000" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Durasi (Hari)</label>
+                                                <input type="number" value={editForm.data.sidebar_duration} onChange={e => editForm.setData('sidebar_duration', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="30" />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

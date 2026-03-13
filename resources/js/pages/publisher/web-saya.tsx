@@ -34,20 +34,57 @@ export default function WebSaya({ blogs, categories, filters = {} }: Props) {
         }
     }, [filterCategory]);
 
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
+
+    const { data, setData, post, patch, processing, errors, reset, clearErrors } = useForm({
         domain: '',
         category_id: '',
-        price: '',
+        has_backlink_authority: false,
+        price_authority_publisher: '',
+        price_authority_advertiser: '',
+        has_backlink_sidebar: false,
+        price_sidebar: '',
+        sidebar_duration: '',
     });
+
+    const openModal = (blog: Blog | null = null) => {
+        clearErrors();
+        if (blog) {
+            setEditingBlog(blog);
+            setData({
+                domain: blog.domain,
+                category_id: blog.category_id.toString(),
+                has_backlink_authority: !!blog.has_backlink_authority,
+                price_authority_publisher: blog.price_authority_publisher?.toString() || '',
+                price_authority_advertiser: blog.price_authority_advertiser?.toString() || '',
+                has_backlink_sidebar: !!blog.has_backlink_sidebar,
+                price_sidebar: blog.price_sidebar?.toString() || '',
+                sidebar_duration: blog.sidebar_duration?.toString() || '',
+            });
+        } else {
+            setEditingBlog(null);
+            reset();
+        }
+        setIsModalOpen(true);
+    };
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/web-saya', {
-            onSuccess: () => {
-                setIsModalOpen(false);
-                reset();
-            },
-        });
+        if (editingBlog) {
+            patch(`/web-saya/${editingBlog.id}`, {
+                onSuccess: () => {
+                    setIsModalOpen(false);
+                    reset();
+                },
+            });
+        } else {
+            post('/web-saya', {
+                onSuccess: () => {
+                    setIsModalOpen(false);
+                    reset();
+                },
+            });
+        }
     };
 
     const getStatusBadge = (status: string) => {
@@ -74,7 +111,7 @@ export default function WebSaya({ blogs, categories, filters = {} }: Props) {
                         <p className="mt-1.5 text-sm text-gray-500">Kelola daftar website Anda untuk menerima pesanan backlink.</p>
                     </div>
                     <button
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={() => openModal()}
                         className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2.5 bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors"
                     >
                         <Plus className="h-4 w-4 mr-1.5" />
@@ -136,8 +173,9 @@ export default function WebSaya({ blogs, categories, filters = {} }: Props) {
                                     <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">SS</th>
                                     <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Indexing</th>
                                     <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Est. Trafik</th>
-                                    <th className="px-5 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Harga (Rp)</th>
+                                    <th className="px-5 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Jenis & Harga</th>
                                     <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -177,11 +215,30 @@ export default function WebSaya({ blogs, categories, filters = {} }: Props) {
                                                     {blog.traffic.toLocaleString()} / bln
                                                 </span>
                                             </td>
-                                            <td className="px-5 py-3.5 text-right text-sm font-bold text-gray-800">
-                                                Rp {blog.price.toLocaleString()}
+                                            <td className="px-5 py-3.5 text-right text-sm">
+                                                <div className="flex flex-col items-end gap-1.5">
+                                                    {blog.has_backlink_authority && (
+                                                        <span className="inline-flex items-center px-2 py-1 rounded bg-teal-50 text-teal-700 text-[11px] font-bold border border-teal-100">
+                                                            Auth: Rp {Number(blog.price_authority_advertiser).toLocaleString()}
+                                                        </span>
+                                                    )}
+                                                    {blog.has_backlink_sidebar && (
+                                                        <span className="inline-flex items-center px-2 py-1 rounded bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-100">
+                                                            Side: Rp {Number(blog.price_sidebar).toLocaleString()}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-5 py-3.5 text-center">
                                                 {getStatusBadge(blog.status)}
+                                            </td>
+                                            <td className="px-5 py-3.5 text-center">
+                                                <button 
+                                                    onClick={() => openModal(blog)}
+                                                    className="text-teal-600 hover:text-teal-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-teal-50 transition-colors border border-teal-100"
+                                                >
+                                                    Edit
+                                                </button>
                                             </td>
                                         </tr>
                                     ))
@@ -197,7 +254,9 @@ export default function WebSaya({ blogs, categories, filters = {} }: Props) {
                         <form onSubmit={submit}>
                             <div className="px-6 py-6 sm:px-8">
                                 <DialogHeader className="mb-5">
-                                    <DialogTitle className="text-lg font-bold text-gray-800">Pendaftaran Web Baru</DialogTitle>
+                                    <DialogTitle className="text-lg font-bold text-gray-800">
+                                        {editingBlog ? 'Update Data Website' : 'Pendaftaran Web Baru'}
+                                    </DialogTitle>
                                 </DialogHeader>
                                 <div className="space-y-4">
                                     <div>
@@ -218,21 +277,66 @@ export default function WebSaya({ blogs, categories, filters = {} }: Props) {
                                             </select>
                                             {errors.category_id && <p className="mt-1 text-xs text-red-500">{errors.category_id}</p>}
                                         </div>
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-600 mb-1">Harga Jual (Rp)</label>
-                                            <input type="number" value={data.price} onChange={e => setData('price', e.target.value)}
-                                                className={`w-full px-4 py-2.5 border ${errors.price ? 'border-red-400' : 'border-gray-200'} rounded-lg bg-gray-50 text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent`}
-                                                placeholder="250000" />
-                                            {errors.price && <p className="mt-1 text-xs text-red-500">{errors.price}</p>}
-                                        </div>
                                     </div>
+
+                                    {/* Backlink Authority */}
+                                    <div className="border rounded-xl p-4 bg-gray-50">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <input type="checkbox" id="has_authority" checked={data.has_backlink_authority} onChange={e => setData('has_backlink_authority', e.target.checked)} className="w-5 h-5 rounded text-teal-600 focus:ring-teal-500" />
+                                            <label htmlFor="has_authority" className="font-bold text-gray-800">Backlink Authority (Artikel)</label>
+                                        </div>
+                                        {data.has_backlink_authority && (
+                                            <div className="grid grid-cols-2 gap-4 pl-8">
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Artikel dr Pemilik Web (Rp)</label>
+                                                    <input type="number" value={data.price_authority_publisher} onChange={e => setData('price_authority_publisher', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="250000" />
+                                                    {/* @ts-ignore */}
+                                                    {errors.price_authority_publisher && <p className="text-xs text-red-500 mt-1">{errors.price_authority_publisher}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Artikel dr Pengiklan (Rp)</label>
+                                                    <input type="number" value={data.price_authority_advertiser} onChange={e => setData('price_authority_advertiser', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="200000" />
+                                                    {/* @ts-ignore */}
+                                                    {errors.price_authority_advertiser && <p className="text-xs text-red-500 mt-1">{errors.price_authority_advertiser}</p>}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Backlink Sidebar */}
+                                    <div className="border rounded-xl p-4 bg-gray-50">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <input type="checkbox" id="has_sidebar" checked={data.has_backlink_sidebar} onChange={e => setData('has_backlink_sidebar', e.target.checked)} className="w-5 h-5 rounded text-teal-600 focus:ring-teal-500" />
+                                            <label htmlFor="has_sidebar" className="font-bold text-gray-800">Backlink Sidebar</label>
+                                        </div>
+                                        {data.has_backlink_sidebar && (
+                                            <div className="grid grid-cols-2 gap-4 pl-8">
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Harga per Durasi (Rp)</label>
+                                                    <input type="number" value={data.price_sidebar} onChange={e => setData('price_sidebar', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="500000" />
+                                                    {/* @ts-ignore */}
+                                                    {errors.price_sidebar && <p className="text-xs text-red-500 mt-1">{errors.price_sidebar}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Durasi Tayang (Hari)</label>
+                                                    <input type="number" value={data.sidebar_duration} onChange={e => setData('sidebar_duration', e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="30" />
+                                                    {/* @ts-ignore */}
+                                                    {errors.sidebar_duration && <p className="text-xs text-red-500 mt-1">{errors.sidebar_duration}</p>}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    {(!data.has_backlink_authority && !data.has_backlink_sidebar) && (
+                                        <p className="text-sm text-red-500 font-medium">Pilih setidaknya satu jenis backlink untuk website ini.</p>
+                                    )}
 
                                 </div>
                             </div>
                             <div className="px-6 py-4 bg-gray-50 flex flex-row-reverse gap-3">
                                 <button type="submit" disabled={processing}
                                     className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold rounded-lg shadow-sm disabled:opacity-50 transition-colors">
-                                    {processing ? 'Menyimpan...' : 'Simpan Web'}
+                                    {processing ? 'Menyimpan...' : (editingBlog ? 'Simpan Perubahan' : 'Simpan Web')}
                                 </button>
                                 <DialogClose asChild>
                                     <button type="button" className="px-5 py-2 border border-gray-200 text-sm font-medium rounded-lg text-gray-600 bg-white hover:bg-gray-50 transition-colors">

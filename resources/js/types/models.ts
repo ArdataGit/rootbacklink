@@ -18,7 +18,12 @@ export interface Blog {
     ss: number;
     indexing: 'yes' | 'no';
     traffic: number;
-    price: number;
+    has_backlink_authority: boolean;
+    price_authority_publisher?: number;
+    price_authority_advertiser?: number;
+    has_backlink_sidebar: boolean;
+    price_sidebar?: number;
+    sidebar_duration?: number;
     status: 'pending' | 'approved' | 'rejected';
     user?: User;
     category?: Category;
@@ -39,7 +44,8 @@ export interface Order {
     blog_id: number;
     invoice_id: string;
     total: number;
-    article_source: 'publisher' | 'advertiser';
+    backlink_type: 'authority' | 'sidebar';
+    article_source?: 'publisher' | 'advertiser';
     instructions?: string;
     doc_link?: string;
     notes?: string;

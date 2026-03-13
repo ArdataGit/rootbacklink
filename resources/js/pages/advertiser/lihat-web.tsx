@@ -1,7 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem, Blog, Category } from '@/types';
-import { Search, Filter, Globe, BarChart, Tag, ShoppingCart, Star } from 'lucide-react';
+import { Search, Filter, Globe, BarChart, Tag, ShoppingCart, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface Props {
@@ -10,6 +10,14 @@ interface Props {
     filters: {
         search?: string;
         category_id?: string;
+        da_min?: string;
+        da_max?: string;
+        pa_min?: string;
+        pa_max?: string;
+        ss_min?: string;
+        ss_max?: string;
+        sort?: string;
+        direction?: 'asc' | 'desc';
     };
 }
 
@@ -18,35 +26,81 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Lihat Semua Web', href: '/lihat-web' },
 ];
 
-export default function LihatWeb({ blogs, categories, filters }: Props) {
+export default function LihatWeb({ blogs = [], categories = [], filters = {} }: Props) {
+    // Add safety guard for missing props
+    if (!filters) filters = {};
+    
     const [search, setSearch] = useState(filters.search || '');
     const [categoryId, setCategoryId] = useState(filters.category_id || '');
+    
+    // Range Filters
+    const [daMin, setDaMin] = useState(filters.da_min || '');
+    const [daMax, setDaMax] = useState(filters.da_max || '');
+    const [paMin, setPaMin] = useState(filters.pa_min || '');
+    const [paMax, setPaMax] = useState(filters.pa_max || '');
+    const [ssMin, setSsMin] = useState(filters.ss_min || '');
+    const [ssMax, setSsMax] = useState(filters.ss_max || '');
+
+    // Sorting
+    const [sort, setSort] = useState(filters.sort || 'created_at');
+    const [direction, setDirection] = useState<'asc'|'desc'>(filters.direction || 'desc');
 
     const handleSearch = () => {
-        router.get('/lihat-web', { search, category_id: categoryId }, { preserveState: true });
+        router.get('/lihat-web', { 
+            search, 
+            category_id: categoryId,
+            da_min: daMin, da_max: daMax,
+            pa_min: paMin, pa_max: paMax,
+            ss_min: ssMin, ss_max: ssMax,
+            sort, direction
+        }, { preserveState: true });
     };
 
-    useEffect(() => {
-        if (categoryId !== (filters.category_id || '')) {
-            handleSearch();
-        }
-    }, [categoryId]);
+    const handleSort = (field: string) => {
+        const newDirection = sort === field && direction === 'asc' ? 'desc' : 'asc';
+        setSort(field);
+        setDirection(newDirection);
+        router.get('/lihat-web', { 
+            search, 
+            category_id: categoryId,
+            da_min: daMin, da_max: daMax,
+            pa_min: paMin, pa_max: paMax,
+            ss_min: ssMin, ss_max: ssMax,
+            sort: field, 
+            direction: newDirection
+        }, { preserveState: true });
+    };
+
+    const resetFilters = () => {
+        setSearch(''); setCategoryId('');
+        setDaMin(''); setDaMax('');
+        setPaMin(''); setPaMax('');
+        setSsMin(''); setSsMax('');
+        router.get('/lihat-web', { sort: 'created_at', direction: 'desc' }, { preserveState: true });
+    };
+
+    const SortIcon = ({ field }: { field: string }) => {
+        if (sort !== field) return <ArrowUpDown className="w-3 h-3 ml-1 inline text-gray-400" />;
+        return direction === 'asc' ? <ArrowUp className="w-3 h-3 ml-1 inline text-teal-600" /> : <ArrowDown className="w-3 h-3 ml-1 inline text-teal-600" />;
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Katalog Web Backlink" />
             
-            <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-gray-800">Katalog Website Backlink</h1>
-                    <p className="mt-1.5 text-gray-500 text-sm">Temukan website berkualitas tinggi untuk meningkatkan otoritas dan peringkat SEO Anda.</p>
+            <div className="p-4 sm:p-6 lg:p-8 w-full max-w-[1400px] mx-auto">
+                <div className="mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-800">Katalog Website Backlink</h1>
+                        <p className="mt-1.5 text-gray-500 text-sm">Temukan website berkualitas tinggi untuk meningkatkan otoritas dan peringkat SEO Anda.</p>
+                    </div>
                 </div>
 
-                {/* Filter */}
-                <div className="bg-white p-5 rounded-xl border border-gray-100 mb-6">
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                        <div className="md:col-span-6 relative">
-                            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Cari Domain</label>
+                {/* Filters Panel */}
+                <div className="bg-white p-5 rounded-xl border border-gray-100 mb-6 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div className="md:col-span-5 relative">
+                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Cari Domain</label>
                             <div className="relative group">
                                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-teal-500 transition-colors" />
                                 <input
@@ -55,16 +109,16 @@ export default function LihatWeb({ blogs, categories, filters }: Props) {
                                     onChange={e => setSearch(e.target.value)}
                                     onKeyPress={e => e.key === 'Enter' && handleSearch()}
                                     placeholder="Ketik nama domain..."
-                                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all text-sm"
+                                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all text-sm"
                                 />
                             </div>
                         </div>
-                        <div className="md:col-span-4">
-                            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Kategori</label>
+                        <div className="md:col-span-3">
+                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Kategori</label>
                             <select
                                 value={categoryId}
-                                onChange={e => setCategoryId(e.target.value)}
-                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all text-sm appearance-none"
+                                onChange={e => { setCategoryId(e.target.value); }}
+                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all text-sm appearance-none"
                             >
                                 <option value="">Semua Kategori</option>
                                 {categories.map(cat => (
@@ -72,84 +126,186 @@ export default function LihatWeb({ blogs, categories, filters }: Props) {
                                 ))}
                             </select>
                         </div>
-                        <div className="md:col-span-2">
+                        <div className="md:col-span-4 flex items-end gap-2">
                             <button
                                 onClick={handleSearch}
-                                className="w-full py-2.5 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
+                                className="flex-1 py-2 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-sm"
                             >
                                 <Filter className="w-4 h-4" />
-                                Filter
+                                Terapkan Filter
                             </button>
+                            <button
+                                onClick={resetFilters}
+                                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold rounded-lg transition-colors flex items-center justify-center text-sm"
+                            >
+                                Reset
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-gray-100 pt-4">
+                        {/* DA Range */}
+                        <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                            <span className="text-xs font-semibold text-gray-500 w-8 text-center shrink-0">DA</span>
+                            <input type="number" placeholder="Min" value={daMin} onChange={e => setDaMin(e.target.value)}
+                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
+                            <span className="text-gray-400">-</span>
+                            <input type="number" placeholder="Max" value={daMax} onChange={e => setDaMax(e.target.value)}
+                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
+                        </div>
+                        {/* PA Range */}
+                        <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                            <span className="text-xs font-semibold text-gray-500 w-8 text-center shrink-0">PA</span>
+                            <input type="number" placeholder="Min" value={paMin} onChange={e => setPaMin(e.target.value)}
+                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
+                            <span className="text-gray-400">-</span>
+                            <input type="number" placeholder="Max" value={paMax} onChange={e => setPaMax(e.target.value)}
+                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
+                        </div>
+                        {/* SS Range */}
+                        <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                            <span className="text-xs font-semibold text-gray-500 w-8 text-center shrink-0">SS %</span>
+                            <input type="number" placeholder="Min" value={ssMin} onChange={e => setSsMin(e.target.value)}
+                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
+                            <span className="text-gray-400">-</span>
+                            <input type="number" placeholder="Max" value={ssMax} onChange={e => setSsMax(e.target.value)}
+                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
                         </div>
                     </div>
                 </div>
 
-                {/* Catalog Grid */}
-                {blogs.length === 0 ? (
-                    <div className="text-center py-20 bg-gray-50 rounded-2xl border border-gray-100">
-                        <Globe className="w-12 h-12 mx-auto text-gray-200 mb-3" />
-                        <h3 className="text-base font-semibold text-gray-600 mb-1">Tidak ditemukan website</h3>
-                        <p className="text-sm text-gray-400">Coba cari dengan kata kunci lain atau pilih kategori yang berbeda.</p>
+                {/* Data Table */}
+                <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-100">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th scope="col" className="px-5 py-3 text-left">
+                                        <button className="flex items-center text-xs font-semibold text-gray-500 uppercase tracking-wider group hover:text-teal-600" onClick={() => handleSort('domain')}>
+                                            Domain <SortIcon field="domain" />
+                                        </button>
+                                    </th>
+                                    <th scope="col" className="px-5 py-3 text-center">
+                                        <button className="flex items-center justify-center mx-auto text-xs font-semibold text-gray-500 uppercase tracking-wider group hover:text-teal-600" onClick={() => handleSort('da')}>
+                                            DA <SortIcon field="da" />
+                                        </button>
+                                    </th>
+                                    <th scope="col" className="px-5 py-3 text-center">
+                                        <button className="flex items-center justify-center mx-auto text-xs font-semibold text-gray-500 uppercase tracking-wider group hover:text-teal-600" onClick={() => handleSort('pa')}>
+                                            PA <SortIcon field="pa" />
+                                        </button>
+                                    </th>
+                                    <th scope="col" className="px-5 py-3 text-center">
+                                        <button className="flex items-center justify-center mx-auto text-xs font-semibold text-gray-500 uppercase tracking-wider group hover:text-teal-600" onClick={() => handleSort('ss')}>
+                                            SS <SortIcon field="ss" />
+                                        </button>
+                                    </th>
+                                    <th scope="col" className="px-5 py-3 text-center">
+                                        <button className="flex items-center justify-center mx-auto text-xs font-semibold text-gray-500 uppercase tracking-wider group hover:text-teal-600" onClick={() => handleSort('traffic')}>
+                                            Est. Trafik <SortIcon field="traffic" />
+                                        </button>
+                                    </th>
+                                    <th scope="col" className="px-5 py-3 text-right">
+                                        <button className="flex items-center justify-end ml-auto text-xs font-semibold text-gray-500 uppercase tracking-wider group hover:text-teal-600">
+                                            Jenis & Harga Backlink
+                                        </button>
+                                    </th>
+                                    <th scope="col" className="px-5 py-3 text-center">
+                                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Aksi</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-50">
+                                {blogs.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="px-5 py-16 text-center">
+                                            <Globe className="w-12 h-12 mx-auto text-gray-200 mb-3" />
+                                            <h3 className="text-base font-semibold text-gray-600 mb-1">Tidak ditemukan website</h3>
+                                            <p className="text-sm text-gray-400">Coba atur ulang filter pencarian Anda.</p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    blogs.map(blog => (
+                                        <tr key={blog.id} className="hover:bg-teal-50/40 transition-colors">
+                                            <td className="px-5 py-4 whitespace-nowrap">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex-shrink-0 h-10 w-10 bg-teal-50 rounded-lg flex items-center justify-center border border-teal-100">
+                                                        <Globe className="h-5 w-5 text-teal-600" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm font-bold text-gray-800">{blog.domain}</div>
+                                                        <div className="flex items-center mt-1 text-xs text-gray-500">
+                                                            <Tag className="h-3 w-3 mr-1" />
+                                                            {blog.category?.name}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-4 text-center whitespace-nowrap">
+                                                <span className="inline-flex items-center justify-center px-2 py-1 rounded bg-teal-50 text-teal-700 font-bold text-sm border border-teal-100 min-w-[40px]">
+                                                    {blog.da}
+                                                </span>
+                                            </td>
+                                            <td className="px-5 py-4 text-center whitespace-nowrap">
+                                                <span className="inline-flex items-center justify-center px-2 py-1 rounded bg-sky-50 text-sky-700 font-bold text-sm border border-sky-100 min-w-[40px]">
+                                                    {blog.pa}
+                                                </span>
+                                            </td>
+                                            <td className="px-5 py-4 text-center whitespace-nowrap">
+                                                <span className="inline-flex items-center justify-center px-2 py-1 rounded bg-rose-50 text-rose-700 font-bold text-sm border border-rose-100 min-w-[40px]">
+                                                    {blog.ss}%
+                                                </span>
+                                            </td>
+                                            <td className="px-5 py-4 text-center whitespace-nowrap">
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-sm font-bold text-gray-700">
+                                                        {blog.traffic >= 1000 ? `${(blog.traffic/1000).toFixed(1)}k` : blog.traffic}
+                                                    </span>
+                                                    {blog.indexing === 'yes' && (
+                                                        <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-1.5 rounded mt-1">Terindeks</span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-4 text-right whitespace-nowrap">
+                                                <div className="flex flex-col items-end gap-1.5">
+                                                    {blog.has_backlink_authority && (
+                                                        <div className="inline-flex items-center gap-2">
+                                                            <span className="text-[10px] font-semibold text-teal-600 uppercase tracking-wider">Authority</span>
+                                                            <span className="inline-flex items-center px-2 py-1 rounded bg-gray-50 text-gray-800 text-xs font-bold border border-gray-200">
+                                                                Rp {Number(blog.price_authority_advertiser).toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {blog.has_backlink_sidebar && (
+                                                        <div className="inline-flex items-center gap-2">
+                                                            <span className="text-[10px] font-semibold text-indigo-600 uppercase tracking-wider">Sidebar</span>
+                                                            <span className="inline-flex items-center px-2 py-1 rounded bg-gray-50 text-gray-800 text-xs font-bold border border-gray-200">
+                                                                Rp {Number(blog.price_sidebar).toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-4 text-center whitespace-nowrap">
+                                                <button 
+                                                    onClick={() => router.get(`/checkout/${blog.id}`)}
+                                                    className="inline-flex items-center px-3 py-2 bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                                                    title="Pesan Backlink"
+                                                >
+                                                    <ShoppingCart className="w-4 h-4 mr-2" />
+                                                    Pesan
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {blogs.map(blog => (
-                            <div key={blog.id} className="group bg-white rounded-2xl border border-gray-100 p-5 transition-all hover:shadow-md hover:border-teal-200">
-                                <div className="flex justify-between items-start mb-4">
-                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 text-xs font-semibold">
-                                        <Tag className="w-3 h-3 mr-1" />
-                                        {blog.category?.name}
-                                    </span>
-                                </div>
+                </div>
 
-                                <h3 className="text-lg font-bold text-gray-800 mb-4 group-hover:text-teal-600 transition-colors break-all">
-                                    {blog.domain}
-                                </h3>
-
-                                <div className="space-y-2.5 mb-5">
-                                    <div className="grid grid-cols-3 gap-2 bg-gray-50 p-3 rounded-xl">
-                                        <div className="text-center">
-                                            <div className="text-[10px] font-semibold text-gray-400 uppercase mb-0.5">DA</div>
-                                            <div className="text-base font-bold text-teal-600">{blog.da}</div>
-                                        </div>
-                                        <div className="text-center border-x border-gray-200">
-                                            <div className="text-[10px] font-semibold text-gray-400 uppercase mb-0.5">PA</div>
-                                            <div className="text-base font-bold text-sky-600">{blog.pa}</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-[10px] font-semibold text-gray-400 uppercase mb-0.5">SS</div>
-                                            <div className="text-base font-bold text-rose-500">{blog.ss}%</div>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2 bg-gray-50 p-3 rounded-xl">
-                                        <div className="text-center border-r border-gray-200">
-                                            <div className="text-[10px] font-semibold text-gray-400 uppercase mb-0.5">Traffic / Bln</div>
-                                            <div className="text-sm font-bold text-amber-600">{blog.traffic >= 1000 ? `${(blog.traffic/1000).toFixed(1)}k` : blog.traffic}</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-[10px] font-semibold text-gray-400 uppercase mb-0.5">Google Index</div>
-                                            <div className="text-sm font-bold text-emerald-600">{blog.indexing === 'yes' ? 'Ya' : 'Tidak'}</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                                    <div>
-                                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Harga Jual</span>
-                                        <div className="text-lg font-bold text-gray-800">Rp {blog.price.toLocaleString()}</div>
-                                    </div>
-                                    <button 
-                                        onClick={() => router.get(`/checkout/${blog.id}`)}
-                                        className="h-11 w-11 rounded-xl bg-teal-500 text-white flex items-center justify-center hover:bg-teal-600 transition-colors shadow-sm"
-                                    >
-                                        <ShoppingCart className="w-5 h-5" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
             </div>
         </AppLayout>
     );
 }
+

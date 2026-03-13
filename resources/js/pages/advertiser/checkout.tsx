@@ -31,6 +31,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Checkout({ blog, paymentChannels = [] }: Props) {
     const { data, setData, post, processing, errors } = useForm({
         blog_id: blog.id,
+        backlink_type: blog.has_backlink_authority ? 'authority' : (blog.has_backlink_sidebar ? 'sidebar' : ''),
         links: [{ link: '', anchor: '' }],
         article_source: 'publisher',
         instructions: '',
@@ -38,6 +39,10 @@ export default function Checkout({ blog, paymentChannels = [] }: Props) {
         notes: '',
         payment_method: '', // New field for Tripay channel code
     });
+
+    const totalPrice = data.backlink_type === 'authority' 
+        ? (data.article_source === 'publisher' ? (blog.price_authority_publisher || 0) : (blog.price_authority_advertiser || 0))
+        : (blog.price_sidebar || 0);
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -123,55 +128,88 @@ export default function Checkout({ blog, paymentChannels = [] }: Props) {
                                 )}
                             </div>
 
-                            {/* Source Selection */}
-                            <div className="pt-5 border-t border-gray-100">
-                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Artikel dari mana?</label>
+                            {/* Backlink Type Selection */}
+                            <div className="space-y-4">
+                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Jenis Backlink</label>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <button type="button" onClick={() => setData('article_source', 'publisher')}
-                                        className={`p-4 rounded-xl border-2 text-left transition-all ${data.article_source === 'publisher' ? 'border-teal-500 bg-teal-50/50' : 'border-gray-100 hover:border-gray-200'}`}>
-                                        <div className="flex items-center gap-2.5">
-                                            <Edit3 className={`w-4 h-4 ${data.article_source === 'publisher' ? 'text-teal-600' : 'text-gray-400'}`} />
-                                            <span className={`font-semibold text-sm ${data.article_source === 'publisher' ? 'text-teal-700' : 'text-gray-600'}`}>Pemilik Web</span>
-                                        </div>
-                                    </button>
-                                    <button type="button" onClick={() => setData('article_source', 'advertiser')}
-                                        className={`p-4 rounded-xl border-2 text-left transition-all ${data.article_source === 'advertiser' ? 'border-teal-500 bg-teal-50/50' : 'border-gray-100 hover:border-gray-200'}`}>
-                                        <div className="flex items-center gap-2.5">
-                                            <FileText className={`w-4 h-4 ${data.article_source === 'advertiser' ? 'text-teal-600' : 'text-gray-400'}`} />
-                                            <span className={`font-semibold text-sm ${data.article_source === 'advertiser' ? 'text-teal-700' : 'text-gray-600'}`}>Saya (Pengiklan)</span>
-                                        </div>
-                                    </button>
+                                    {blog.has_backlink_authority && (
+                                        <button type="button" onClick={() => setData('backlink_type', 'authority')}
+                                            className={`p-4 rounded-xl border-2 text-left transition-all flex justify-between items-center ${data.backlink_type === 'authority' ? 'border-teal-500 bg-teal-50/50' : 'border-gray-100 hover:border-gray-200'}`}>
+                                            <div className="flex flex-col">
+                                                <span className={`font-semibold text-sm ${data.backlink_type === 'authority' ? 'text-teal-700' : 'text-gray-800'}`}>Backlink Authority</span>
+                                                <span className="text-xs text-gray-400 mt-1">Artikel permanen</span>
+                                            </div>
+                                        </button>
+                                    )}
+                                    {blog.has_backlink_sidebar && (
+                                        <button type="button" onClick={() => setData('backlink_type', 'sidebar')}
+                                            className={`p-4 rounded-xl border-2 text-left transition-all flex justify-between items-center ${data.backlink_type === 'sidebar' ? 'border-teal-500 bg-teal-50/50' : 'border-gray-100 hover:border-gray-200'}`}>
+                                            <div className="flex flex-col">
+                                                <span className={`font-semibold text-sm ${data.backlink_type === 'sidebar' ? 'text-teal-700' : 'text-gray-800'}`}>Backlink Sidebar</span>
+                                                <span className="text-xs text-gray-400 mt-1">Tayang {blog.sidebar_duration} hari</span>
+                                            </div>
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
-                            {/* Conditional Inputs */}
-                            {data.article_source === 'publisher' ? (
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-semibold text-gray-600">Instruksi untuk Pemilik Web</label>
-                                    <textarea
-                                        value={data.instructions}
-                                        onChange={e => setData('instructions', e.target.value)}
-                                        rows={3}
-                                        placeholder="Contoh: Tolong buatkan artikel informatif..."
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm transition-all"
-                                    />
-                                    {errors.instructions && <p className="text-xs text-red-500">{errors.instructions}</p>}
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-semibold text-gray-600">Link Dokumen Artikel</label>
-                                    <div className="relative">
-                                        <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                        <input
-                                            type="url"
-                                            value={data.doc_link}
-                                            onChange={e => setData('doc_link', e.target.value)}
-                                            placeholder="https://docs.google.com/document/..."
-                                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm transition-all"
-                                        />
+                            {/* Source Selection (Only for Authority) */}
+                            {data.backlink_type === 'authority' && (
+                                <div className="pt-5 border-t border-gray-100">
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Artikel dari mana?</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button type="button" onClick={() => setData('article_source', 'publisher')}
+                                            className={`p-4 rounded-xl border-2 text-left transition-all flex flex-col items-start gap-1 justify-center ${data.article_source === 'publisher' ? 'border-teal-500 bg-teal-50/50' : 'border-gray-100 hover:border-gray-200'}`}>
+                                            <div className="flex items-center gap-2.5">
+                                                <Edit3 className={`w-4 h-4 ${data.article_source === 'publisher' ? 'text-teal-600' : 'text-gray-400'}`} />
+                                                <span className={`font-semibold text-sm ${data.article_source === 'publisher' ? 'text-teal-700' : 'text-gray-600'}`}>Pemilik Web</span>
+                                            </div>
+                                            <span className="text-[11px] font-bold text-teal-600 ml-[26px]">Rp {Number(blog.price_authority_publisher).toLocaleString()}</span>
+                                        </button>
+                                        <button type="button" onClick={() => setData('article_source', 'advertiser')}
+                                            className={`p-4 rounded-xl border-2 text-left transition-all flex flex-col items-start gap-1 justify-center ${data.article_source === 'advertiser' ? 'border-teal-500 bg-teal-50/50' : 'border-gray-100 hover:border-gray-200'}`}>
+                                            <div className="flex items-center gap-2.5">
+                                                <FileText className={`w-4 h-4 ${data.article_source === 'advertiser' ? 'text-teal-600' : 'text-gray-400'}`} />
+                                                <span className={`font-semibold text-sm ${data.article_source === 'advertiser' ? 'text-teal-700' : 'text-gray-600'}`}>Saya (Pengiklan)</span>
+                                            </div>
+                                            <span className="text-[11px] font-bold text-teal-600 ml-[26px]">Rp {Number(blog.price_authority_advertiser).toLocaleString()}</span>
+                                        </button>
                                     </div>
-                                    {errors.doc_link && <p className="text-xs text-red-500">{errors.doc_link}</p>}
-                                    <p className="text-[11px] text-gray-400 flex items-center gap-1"><Info className="w-3 h-3" /> Pastikan akses link 'Anyone with the link' sebagai Viewer.</p>
+                                </div>
+                            )}
+
+                            {/* Conditional Inputs */}
+                            {data.backlink_type === 'authority' && (
+                                <div className="space-y-4">
+                                    {data.article_source === 'publisher' ? (
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-semibold text-gray-600">Instruksi untuk Pemilik Web</label>
+                                            <textarea
+                                                value={data.instructions}
+                                                onChange={e => setData('instructions', e.target.value)}
+                                                rows={3}
+                                                placeholder="Contoh: Tolong buatkan artikel informatif..."
+                                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm transition-all"
+                                            />
+                                            {errors.instructions && <p className="text-xs text-red-500">{errors.instructions}</p>}
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-semibold text-gray-600">Link Dokumen Artikel</label>
+                                            <div className="relative">
+                                                <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                                <input
+                                                    type="url"
+                                                    value={data.doc_link}
+                                                    onChange={e => setData('doc_link', e.target.value)}
+                                                    placeholder="https://docs.google.com/document/..."
+                                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm transition-all"
+                                                />
+                                            </div>
+                                            {errors.doc_link && <p className="text-xs text-red-500">{errors.doc_link}</p>}
+                                            <p className="text-[11px] text-gray-400 flex items-center gap-1"><Info className="w-3 h-3" /> Pastikan akses link 'Anyone with the link' sebagai Viewer.</p>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -273,8 +311,9 @@ export default function Checkout({ blog, paymentChannels = [] }: Props) {
 
                                 <div className="pt-3">
                                     <span className="text-xs font-semibold opacity-50 uppercase tracking-wider">Total Bayar</span>
-                                    <div className="text-2xl font-bold mt-0.5">Rp {blog.price.toLocaleString()}</div>
+                                    <div className="text-2xl font-bold mt-0.5">Rp {totalPrice.toLocaleString()}</div>
                                 </div>
+                                <p className="text-xs opacity-80">{data.backlink_type === 'sidebar' ? `Berlaku untuk ${blog.sidebar_duration} hari` : 'Artikel permanen'}</p>
                             </div>
                         </div>
 

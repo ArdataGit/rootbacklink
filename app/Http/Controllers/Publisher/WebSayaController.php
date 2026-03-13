@@ -51,16 +51,25 @@ class WebSayaController extends Controller
         $validated = $request->validate([
             'domain' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
-            'price' => 'required|numeric|min:0',
+            'has_backlink_authority' => 'boolean',
+            'price_authority_publisher' => 'required_if:has_backlink_authority,true|numeric|nullable|min:0',
+            'price_authority_advertiser' => 'required_if:has_backlink_authority,true|numeric|nullable|min:0',
+            'has_backlink_sidebar' => 'boolean',
+            'price_sidebar' => 'required_if:has_backlink_sidebar,true|numeric|nullable|min:0',
+            'sidebar_duration' => 'required_if:has_backlink_sidebar,true|integer|nullable|min:1',
         ]);
 
         $validated['user_id'] = auth()->id();
         $validated['status'] = 'pending';
+        // Admin-managed stats default to 0/'no'
         $validated['da'] = 0;
         $validated['pa'] = 0;
         $validated['ss'] = 0;
         $validated['traffic'] = 0;
         $validated['indexing'] = 'no';
+
+        $validated['has_backlink_authority'] = $request->boolean('has_backlink_authority');
+        $validated['has_backlink_sidebar'] = $request->boolean('has_backlink_sidebar');
 
         Blog::create($validated);
 
@@ -86,9 +95,32 @@ class WebSayaController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Blog $blog)
     {
-    //
+        if ($blog->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'domain' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'has_backlink_authority' => 'boolean',
+            'price_authority_publisher' => 'required_if:has_backlink_authority,true|numeric|nullable|min:0',
+            'price_authority_advertiser' => 'required_if:has_backlink_authority,true|numeric|nullable|min:0',
+            'has_backlink_sidebar' => 'boolean',
+            'price_sidebar' => 'required_if:has_backlink_sidebar,true|numeric|nullable|min:0',
+            'sidebar_duration' => 'required_if:has_backlink_sidebar,true|integer|nullable|min:1',
+        ]);
+
+        $validated['has_backlink_authority'] = $request->boolean('has_backlink_authority');
+        $validated['has_backlink_sidebar'] = $request->boolean('has_backlink_sidebar');
+
+        // If updated, set status back to pending for re-review
+        $validated['status'] = 'pending';
+
+        $blog->update($validated);
+
+        return redirect()->back()->with('success', 'Perubahan website berhasil disimpan dan akan ditinjau kembali oleh Admin.');
     }
 
     /**

@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Globe, DollarSign, Search, Receipt, Shield, Database, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { LayoutGrid, Globe, DollarSign, Search, Receipt, Shield, Database, Image as ImageIcon, Sparkles, Settings } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -44,6 +44,11 @@ const adminNavItems: NavItem[] = [
         title: 'Master Banner',
         href: '/admin/banners',
         icon: ImageIcon,
+    },
+    {
+        title: 'Pengaturan',
+        href: '/admin/settings',
+        icon: Settings,
     },
 ];
 

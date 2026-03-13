@@ -7,9 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use Inertia\Inertia;
 
-Route::inertia('/', 'welcome', [
-    'canRegister' => Features::enabled(Features::registration()),
-])->name('home');
+Route::redirect('/', '/login');
 
 // Tripay Callback (no auth, no CSRF)
 Route::post('tripay/callback', [\App\Http\Controllers\TripayCallbackController::class , 'handle'])
@@ -93,6 +91,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Publisher Routes
         Route::get('web-saya', [WebSayaController::class , 'index'])->name('publisher.web-saya.index');
         Route::post('web-saya', [WebSayaController::class , 'store'])->name('publisher.web-saya.store');
+        Route::patch('web-saya/{blog}', [WebSayaController::class , 'update'])->name('publisher.web-saya.update');
         Route::post('withdrawals', [\App\Http\Controllers\Publisher\WithdrawalController::class , 'store'])->name('publisher.withdrawals.store');
         Route::patch('orders/{order}/publish', [\App\Http\Controllers\Publisher\OrderController::class , 'publish'])->name('publisher.orders.publish');
         Route::get('pemasukkan', function () {
@@ -172,8 +171,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             // Admin Order Management
             Route::get('orders', [\App\Http\Controllers\Admin\OrderController::class , 'index'])->name('admin.orders.index');
             Route::patch('orders/{order}/status', [\App\Http\Controllers\Admin\OrderController::class , 'updateStatus'])->name('admin.orders.update-status');
-        }
-        );
+            // Admin Settings
+            Route::get('settings', [\App\Http\Controllers\Admin\SettingController::class, 'index'])->name('admin.settings.index');
+            Route::post('settings', [\App\Http\Controllers\Admin\SettingController::class, 'store'])->name('admin.settings.store');
+        });
     });
 
 require __DIR__ . '/settings.php';
