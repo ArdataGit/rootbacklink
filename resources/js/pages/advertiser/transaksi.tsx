@@ -78,9 +78,10 @@ export default function Transaksi({ orders = [] }: Props) {
                                 <tr className="bg-gray-50 border-b border-gray-100">
                                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-14">No</th>
                                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Transaksi ID</th>
-                                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Domain</th>
+                                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Detail Pesanan</th>
                                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status Pembayaran</th>
                                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status Publisher</th>
+                                    <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -97,11 +98,20 @@ export default function Transaksi({ orders = [] }: Props) {
                                             <td className="px-5 py-4 text-sm text-gray-500 font-medium">
                                                 {index + 1}
                                             </td>
-                                            <td className="px-5 py-4 text-sm font-semibold text-gray-800">
-                                                {order.invoice_id}
+                                            <td className="px-5 py-4">
+                                                <div className="text-sm font-semibold text-gray-800">{order.invoice_id}</div>
+                                                <div className="text-[10px] text-gray-400 mt-0.5">
+                                                    {order.created_at ? new Date(order.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                                                </div>
                                             </td>
-                                            <td className="px-5 py-4 text-sm text-gray-600 font-medium">
-                                                {order.blog?.domain}
+                                            <td className="px-5 py-4">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-xs font-bold text-gray-800 underline decoration-teal-200">{order.blog?.domain}</span>
+                                                    <span className="px-1.5 py-0.5 bg-gray-100 text-[10px] rounded font-semibold text-gray-500 uppercase">{order.backlink_type}</span>
+                                                </div>
+                                                <div className="text-xs text-gray-500 truncate max-w-[200px]" title={order.description}>
+                                                    {order.description || <span className="italic text-gray-400">Tidak ada detail</span>}
+                                                </div>
                                             </td>
                                             <td className="px-5 py-4">
                                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusStyle(order.status)}`}>
@@ -125,6 +135,18 @@ export default function Transaksi({ orders = [] }: Props) {
                                                         <Clock className="w-3 h-3" />
                                                         Menunggu Diproses
                                                     </span>
+                                                )}
+                                            </td>
+                                            <td className="px-5 py-4 text-center">
+                                                {order.status === 'unpaid' && order.tripay_checkout_url ? (
+                                                    <a 
+                                                        href={order.tripay_checkout_url} 
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-all shadow-sm shadow-amber-200"
+                                                    >
+                                                        Bayar Sekarang
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400 font-medium italic">-</span>
                                                 )}
                                             </td>
                                         </tr>
