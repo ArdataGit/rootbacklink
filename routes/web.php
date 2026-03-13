@@ -9,9 +9,7 @@ use Inertia\Inertia;
 
 Route::redirect('/', '/login');
 
-// Tripay Callback (no auth, no CSRF)
-Route::post('tripay/callback', [\App\Http\Controllers\TripayCallbackController::class , 'handle'])
-    ->name('tripay.callback');
+// Tripay Callback (moved to api.php)
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {

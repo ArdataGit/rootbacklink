@@ -50,7 +50,7 @@ class TripayService
         'customer_email' => $params['customer_email'],
         'customer_phone' => $params['customer_phone'] ?? '',
         'order_items' => $params['order_items'],
-        'callback_url' => route('tripay.callback'),
+        'callback_url' => route('api.tripay.callback'),
         'return_url' => $params['return_url'] ?? route('advertiser.transaksi'),
         'expired_time' => now()->addDay()->timestamp,
         'signature' => $signature,
