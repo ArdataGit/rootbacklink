@@ -25,11 +25,14 @@ class OrderController extends Controller
         $validated = $request->validate([
             'status' => 'required|in:unpaid,paid,published,completed',
             'published_link' => 'nullable|url',
+            'published_links' => 'nullable|array',
+            'published_links.*' => 'url',
         ]);
 
         $order->update([
             'status' => $validated['status'],
             'published_link' => $validated['published_link'] ?? $order->published_link,
+            'published_links' => $validated['published_links'] ?? $order->published_links,
         ]);
 
         return back()->with('success', 'Status transaksi berhasil diperbarui.');

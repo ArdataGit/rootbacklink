@@ -206,8 +206,8 @@ export default function LihatWeb({ blogs = [], categories = [], filters = {} }: 
                                         </button>
                                     </th>
                                     <th scope="col" className="px-5 py-3 text-right">
-                                        <button className="flex items-center justify-end ml-auto text-xs font-semibold text-gray-500 uppercase tracking-wider group hover:text-teal-600">
-                                            Jenis & Harga Backlink
+                                        <button className="flex items-center justify-end ml-auto text-xs font-semibold text-gray-500 uppercase tracking-wider group hover:text-teal-600" onClick={() => handleSort('price')}>
+                                            Jenis & Harga Backlink <SortIcon field="price" />
                                         </button>
                                     </th>
                                     <th scope="col" className="px-5 py-3 text-center">

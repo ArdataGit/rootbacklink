@@ -5,8 +5,17 @@ import { Receipt, Clock, CheckCircle2, XCircle, Search, Globe, User, Eye, Chevro
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 
+interface AdminOrder extends Order {
+    quantity: number;
+    admin_fee: number;
+    admin_fee_percentage: number;
+    publisher_amount: number;
+    description?: string;
+    published_links?: string[];
+}
+
 interface Props {
-    orders: Order[];
+    orders: AdminOrder[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -22,7 +31,7 @@ const statusOptions = [
 ];
 
 export default function AdminOrders({ orders = [] }: Props) {
-    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
     const [detailOpen, setDetailOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -114,11 +123,11 @@ export default function AdminOrders({ orders = [] }: Props) {
                                 <tr className="bg-gray-50 border-b border-gray-100">
                                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-12">No</th>
                                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Invoice</th>
-                                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Advertiser</th>
-                                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Domain</th>
-                                    <th className="px-5 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Nominal</th>
+                                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User/Domain</th>
+                                    <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty/Nominal</th>
+                                    <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Fee Admin</th>
+                                    <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Publisher</th>
                                     <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Tanggal</th>
                                     <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Aksi</th>
                                 </tr>
                             </thead>
@@ -137,20 +146,32 @@ export default function AdminOrders({ orders = [] }: Props) {
                                             <tr key={order.id} className="hover:bg-teal-50/30 transition-colors">
                                                 <td className="px-5 py-3.5 text-sm text-gray-500">{index + 1}</td>
                                                 <td className="px-5 py-3.5 text-sm font-semibold text-gray-800">{order.invoice_id}</td>
-                                                <td className="px-5 py-3.5 text-sm text-gray-600">
-                                                    <div className="flex items-center gap-2">
+                                                <td className="px-5 py-3.5 text-sm">
+                                                    <div className="flex items-center gap-2 mb-1">
                                                         <User className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                                                         <span className="font-medium">{order.user?.name || '-'}</span>
                                                     </div>
-                                                </td>
-                                                <td className="px-5 py-3.5 text-sm">
                                                     <div className="flex items-center gap-2">
                                                         <Globe className="w-3.5 h-3.5 text-teal-500 shrink-0" />
-                                                        <span className="text-gray-700 font-medium">{order.blog?.domain || '-'}</span>
+                                                        <span className="text-gray-500 text-xs">{order.blog?.domain || '-'}</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-5 py-3.5 text-sm font-bold text-gray-800 text-right">
-                                                    Rp {Number(order.total).toLocaleString('id-ID')}
+                                                <td className="px-5 py-3.5 text-center">
+                                                    <div className="text-[10px] text-gray-400 font-bold">{order.quantity}x</div>
+                                                    <div className="text-sm font-bold text-gray-800">
+                                                        Rp {Number(order.total).toLocaleString('id-ID')}
+                                                    </div>
+                                                </td>
+                                                <td className="px-5 py-3.5 text-center">
+                                                    <div className="text-[10px] text-red-400 font-bold">-{order.admin_fee_percentage}%</div>
+                                                    <div className="text-xs text-red-500 font-semibold">
+                                                        Rp {Number(order.admin_fee || 0).toLocaleString('id-ID')}
+                                                    </div>
+                                                </td>
+                                                <td className="px-5 py-3.5 text-center">
+                                                    <div className="text-sm font-bold text-teal-600">
+                                                        Rp {Number(order.publisher_amount || 0).toLocaleString('id-ID')}
+                                                    </div>
                                                 </td>
                                                 <td className="px-5 py-3.5 text-center">
                                                     <div className="relative inline-block">
@@ -209,8 +230,20 @@ export default function AdminOrders({ orders = [] }: Props) {
                                     <p className="text-sm font-medium text-gray-700">{selectedOrder.user?.name}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Nominal</p>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Quantity</p>
+                                    <p className="text-sm font-bold text-gray-800">{selectedOrder.quantity}x</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Total Bayar</p>
                                     <p className="text-sm font-bold text-gray-800">Rp {Number(selectedOrder.total).toLocaleString('id-ID')}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Potongan Admin ({selectedOrder.admin_fee_percentage}%)</p>
+                                    <p className="text-sm font-bold text-red-500">- Rp {Number(selectedOrder.admin_fee || 0).toLocaleString('id-ID')}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Bersih Publisher</p>
+                                    <p className="text-sm font-bold text-teal-600">Rp {Number(selectedOrder.publisher_amount || 0).toLocaleString('id-ID')}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Source Artikel</p>
@@ -225,9 +258,16 @@ export default function AdminOrders({ orders = [] }: Props) {
                                 </div>
                             </div>
 
+                             {selectedOrder.description && (
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Deskripsi/Detail</p>
+                                    <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-100">{selectedOrder.description}</p>
+                                </div>
+                            )}
+
                             {selectedOrder.instructions && (
                                 <div>
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Instruksi</p>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Instruksi Brief</p>
                                     <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{selectedOrder.instructions}</p>
                                 </div>
                             )}
@@ -266,10 +306,24 @@ export default function AdminOrders({ orders = [] }: Props) {
                                 </div>
                             )}
 
-                            {selectedOrder.published_link && (
+                             {(selectedOrder.published_link || (selectedOrder.published_links && selectedOrder.published_links.length > 0)) && (
                                 <div>
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Published Link</p>
-                                    <a href={selectedOrder.published_link} target="_blank" rel="noreferrer" className="text-sm text-teal-600 hover:underline break-all">{selectedOrder.published_link}</a>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Published Links</p>
+                                    <div className="space-y-1.5">
+                                        {selectedOrder.published_links && selectedOrder.published_links.length > 0 ? (
+                                            selectedOrder.published_links.map((link, i) => (
+                                                <a key={i} href={link} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 w-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] hover:bg-emerald-100 transition-colors rounded-lg break-all font-medium">
+                                                    <ExternalLink className="w-3 h-3 shrink-0" />
+                                                    {link}
+                                                </a>
+                                            ))
+                                        ) : (
+                                            <a href={selectedOrder.published_link} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 w-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] hover:bg-emerald-100 transition-colors rounded-lg break-all font-medium">
+                                                <ExternalLink className="w-3 h-3 shrink-0" />
+                                                {selectedOrder.published_link}
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
                             )}
 

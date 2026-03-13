@@ -37,12 +37,16 @@ export default function Checkout({ blog, paymentChannels = [] }: Props) {
         instructions: '',
         doc_link: '',
         notes: '',
+        description: '',
+        quantity: 1,
         payment_method: '', // New field for Tripay channel code
     });
 
-    const totalPrice = data.backlink_type === 'authority' 
+    const unitPrice = data.backlink_type === 'authority' 
         ? (data.article_source === 'publisher' ? (blog.price_authority_publisher || 0) : (blog.price_authority_advertiser || 0))
         : (blog.price_sidebar || 0);
+
+    const totalPrice = unitPrice * data.quantity;
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -87,7 +91,21 @@ export default function Checkout({ blog, paymentChannels = [] }: Props) {
                             
                             {/* Dynamic Links */}
                             <div className="space-y-3">
-                                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Target Link & Anchor</label>
+                                <div className="flex justify-between items-center mb-3">
+                                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Target Link & Anchor</label>
+                                    <div className="flex items-center gap-3">
+                                        <label htmlFor="quantity" className="text-xs font-semibold text-gray-400 uppercase">Jumlah:</label>
+                                        <input 
+                                            id="quantity"
+                                            type="number" 
+                                            min="1" 
+                                            max="10"
+                                            value={data.quantity}
+                                            onChange={e => setData('quantity', parseInt(e.target.value) || 1)}
+                                            className="w-16 px-2 py-1 bg-gray-50 border border-gray-200 rounded text-sm font-bold text-teal-600 focus:ring-1 focus:ring-teal-500 focus:outline-none"
+                                        />
+                                    </div>
+                                </div>
                                 {data.links.map((linkData, index) => (
                                     <div key={index} className="flex gap-3 items-start">
                                         <div className="flex-1 space-y-2">
@@ -183,7 +201,10 @@ export default function Checkout({ blog, paymentChannels = [] }: Props) {
                                 <div className="space-y-4">
                                     {data.article_source === 'publisher' ? (
                                         <div className="space-y-2">
-                                            <label className="block text-sm font-semibold text-gray-600">Instruksi untuk Pemilik Web</label>
+                                            <div className="flex justify-between items-center">
+                                                <label className="block text-sm font-semibold text-gray-600">Instruksi untuk Pemilik Web</label>
+                                                <span className="text-[10px] text-gray-400 font-medium">Brief artikel</span>
+                                            </div>
                                             <textarea
                                                 value={data.instructions}
                                                 onChange={e => setData('instructions', e.target.value)}
@@ -210,6 +231,17 @@ export default function Checkout({ blog, paymentChannels = [] }: Props) {
                                             <p className="text-[11px] text-gray-400 flex items-center gap-1"><Info className="w-3 h-3" /> Pastikan akses link 'Anyone with the link' sebagai Viewer.</p>
                                         </div>
                                     )}
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-semibold text-gray-600">Deskripsi/Detail Artikel (Opsional)</label>
+                                        <textarea
+                                            value={data.description}
+                                            onChange={e => setData('description', e.target.value)}
+                                            rows={2}
+                                            placeholder="Gambarkan topik atau isi artikel yang diinginkan..."
+                                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm transition-all"
+                                        />
+                                        {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
+                                    </div>
                                 </div>
                             )}
 
@@ -309,11 +341,15 @@ export default function Checkout({ blog, paymentChannels = [] }: Props) {
                                     </div>
                                 </div>
 
-                                <div className="pt-3">
+                                <div className="pt-3 border-t border-white/15 mt-3">
+                                    <div className="flex justify-between items-center text-xs opacity-70 mb-1">
+                                        <span>Harga Satuan x {data.quantity}</span>
+                                        <span>Rp {unitPrice.toLocaleString()}</span>
+                                    </div>
                                     <span className="text-xs font-semibold opacity-50 uppercase tracking-wider">Total Bayar</span>
                                     <div className="text-2xl font-bold mt-0.5">Rp {totalPrice.toLocaleString()}</div>
                                 </div>
-                                <p className="text-xs opacity-80">{data.backlink_type === 'sidebar' ? `Berlaku untuk ${blog.sidebar_duration} hari` : 'Artikel permanen'}</p>
+                                <p className="text-xs opacity-80 mt-1">{data.backlink_type === 'sidebar' ? `Berlaku untuk ${blog.sidebar_duration} hari` : 'Artikel permanen'}</p>
                             </div>
                         </div>
 

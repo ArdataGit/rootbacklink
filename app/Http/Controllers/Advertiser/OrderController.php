@@ -41,6 +41,8 @@ class OrderController extends Controller
             'instructions' => 'required_if:article_source,publisher',
             'doc_link' => 'required_if:article_source,advertiser',
             'notes' => 'nullable|string',
+            'description' => 'nullable|string',
+            'quantity' => 'required|integer|min:1|max:10',
             'links' => 'required|array|min:1|max:4',
             'links.*.link' => 'required|url',
             'links.*.anchor' => 'required|string',
@@ -51,18 +53,26 @@ class OrderController extends Controller
         $user = auth()->user();
 
         // Calculate Price
-        $totalPrice = 0;
+        $unitPrice = 0;
         if ($validated['backlink_type'] === 'authority') {
-            $totalPrice = $validated['article_source'] === 'publisher' 
+            $unitPrice = $validated['article_source'] === 'publisher' 
                           ? $blog->price_authority_publisher 
                           : $blog->price_authority_advertiser;
         } else {
-            $totalPrice = $blog->price_sidebar;
+            $unitPrice = $blog->price_sidebar;
         }
 
-        if (!$totalPrice || $totalPrice <= 0) {
+        if (!$unitPrice || $unitPrice <= 0) {
             return redirect()->back()->withErrors(['backlink_type' => 'Harga backlink tidak valid atau belum diatur oleh publisher.']);
         }
+
+        $quantity = (int)$validated['quantity'];
+        $totalPrice = $unitPrice * $quantity;
+
+        // Admin Fee Calculation
+        $adminFeePercent = (float)\App\Models\Setting::where('key', 'admin_fee_percentage')->value('value') ?? 0;
+        $adminFee = ($totalPrice * $adminFeePercent) / 100;
+        $publisherAmount = $totalPrice - $adminFee;
 
         $invoiceId = 'INV-' . strtoupper(uniqid());
 
@@ -71,8 +81,13 @@ class OrderController extends Controller
             'blog_id' => $blog->id,
             'invoice_id' => $invoiceId,
             'total' => $totalPrice,
+            'quantity' => $quantity,
+            'admin_fee' => $adminFee,
+            'admin_fee_percentage' => $adminFeePercent,
+            'publisher_amount' => $publisherAmount,
             'backlink_type' => $validated['backlink_type'],
             'article_source' => $validated['article_source'] ?? null,
+            'description' => $validated['description'] ?? null,
             'instructions' => $validated['instructions'] ?? null,
             'doc_link' => $validated['doc_link'] ?? null,
             'notes' => $validated['notes'] ?? null,
@@ -100,9 +115,9 @@ class OrderController extends Controller
             'return_url' => route('advertiser.transaksi'),
             'order_items' => [
                 [
-                    'name' => 'Backlink ' . ucfirst($validated['backlink_type']) . ' - ' . $blog->domain,
-                    'price' => (int)$totalPrice,
-                    'quantity' => 1,
+                    'name' => 'Backlink ' . ucfirst($validated['backlink_type']) . ' (' . $quantity . 'x) - ' . $blog->domain,
+                    'price' => (int)$unitPrice,
+                    'quantity' => $quantity,
                 ],
             ],
         ]);

@@ -22,6 +22,11 @@ interface IncomeRecord {
     id: number;
     invoice_id: string;
     total: number;
+    quantity: number;
+    admin_fee: number;
+    admin_fee_percentage: number;
+    publisher_amount: number;
+    description?: string;
     created_at: string;
     status: string;
     article_source?: string;
@@ -29,6 +34,8 @@ interface IncomeRecord {
     doc_link?: string;
     notes?: string;
     published_link?: string;
+    published_links?: string[];
+    backlink_type?: string;
     blog?: { domain: string };
     user?: { name: string; email: string };
     links?: { link: string; anchor: string }[];
@@ -59,7 +66,10 @@ export default function Pemasukkan({ pemasukkan = [], stats = { total_saldo: 0, 
         processing: publishProcessing, 
         errors: publishErrors, 
         reset: publishReset 
-    } = useForm({ published_link: '' });
+    } = useForm({ 
+        published_link: '',
+        published_links: [] as string[]
+    });
 
     const submitWithdrawal = (e: React.FormEvent) => {
         e.preventDefault();
@@ -158,9 +168,11 @@ export default function Pemasukkan({ pemasukkan = [], stats = { total_saldo: 0, 
                             <thead>
                                 <tr className="bg-gray-50 border-b border-gray-100">
                                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">No Transaksi</th>
-                                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Domain</th>
-                                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nominal</th>
-                                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Keterangan</th>
+                                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Web & Tgl</th>
+                                    <th className="px-5 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty/Nominal</th>
+                                    <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Potongan Admin</th>
+                                    <th className="px-5 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Net Income</th>
+                                    <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                                     <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
                                 </tr>
                             </thead>
@@ -177,30 +189,38 @@ export default function Pemasukkan({ pemasukkan = [], stats = { total_saldo: 0, 
                                         <tr key={item.id} className="hover:bg-teal-50/30 transition-colors">
                                             <td className="px-5 py-3.5 text-sm font-medium text-gray-800">{item.invoice_id}</td>
                                             <td className="px-5 py-3.5 text-sm text-gray-600">
-                                                {item.blog?.domain || '-'}
-                                                <div className="text-xs text-gray-400 mt-0.5">{new Date(item.created_at).toLocaleDateString('id-ID')}</div>
+                                                <div className="font-semibold">{item.blog?.domain || '-'}</div>
+                                                <div className="text-[10px] text-gray-400 mt-0.5">{new Date(item.created_at).toLocaleDateString('id-ID')}</div>
                                             </td>
-                                            <td className="px-5 py-3.5 text-sm font-bold text-gray-800">
-                                                Rp {new Intl.NumberFormat('id-ID').format(item.total)}
+                                            <td className="px-5 py-3.5 text-right">
+                                                <div className="text-xs text-gray-400">{item.quantity}x</div>
+                                                <div className="text-sm font-semibold text-gray-500">Rp {new Intl.NumberFormat('id-ID').format(item.total)}</div>
                                             </td>
-                                            <td className="px-5 py-3.5 text-sm text-gray-600">
-                                                Order dari: <span className="font-medium text-gray-800">{item.user?.name || '-'}</span>
-                                                <div className="mt-1">
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-50 text-gray-600 border border-gray-200">
-                                                        {item.status}
-                                                    </span>
-                                                </div>
+                                            <td className="px-5 py-3.5 text-center">
+                                                <div className="text-[10px] font-bold text-red-400">-{item.admin_fee_percentage}%</div>
+                                                <div className="text-xs text-red-500">Rp {new Intl.NumberFormat('id-ID').format(item.admin_fee)}</div>
+                                            </td>
+                                            <td className="px-5 py-3.5 text-right">
+                                                <div className="text-sm font-bold text-teal-600">Rp {new Intl.NumberFormat('id-ID').format(item.publisher_amount)}</div>
+                                            </td>
+                                            <td className="px-5 py-3.5 text-center">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-gray-50 text-gray-600 border border-gray-200">
+                                                    {item.status}
+                                                </span>
                                             </td>
                                             <td className="px-5 py-3.5 text-center">
                                                 <button 
                                                     onClick={() => {
                                                         setSelectedOrder(item);
-                                                        setPublishData('published_link', item.published_link || '');
+                                                        setPublishData({
+                                                            published_link: item.published_link || '',
+                                                            published_links: item.published_links || Array(item.quantity).fill('')
+                                                        });
                                                         setIsDetailModalOpen(true);
                                                     }}
                                                     className="inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg text-white bg-teal-500 hover:bg-teal-600 transition-colors"
                                                 >
-                                                    <Eye className="w-3.5 h-3.5 mr-1" /> Lihat Detail
+                                                    <Eye className="w-3.5 h-3.5 mr-1" /> Detail
                                                 </button>
                                             </td>
                                         </tr>
@@ -280,10 +300,31 @@ export default function Pemasukkan({ pemasukkan = [], stats = { total_saldo: 0, 
                                     <div>
                                         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Source Artikel</p>
                                         <p className="text-sm font-medium text-gray-700">
-                                            {selectedOrder.article_source === 'publisher' ? 'Web Anda' : 'Pengiklan'}
+                                            {selectedOrder.article_source === 'publisher' ? 'Layanan Anda' : 'Pengiklan'} ({selectedOrder.backlink_type})
                                         </p>
                                     </div>
+                                    <div className="col-span-2 pt-2 pb-1 border-y border-gray-50 mt-1">
+                                        <div className="flex justify-between items-center text-xs mb-1">
+                                            <span className="text-gray-400">Harga Total ({selectedOrder.quantity}x)</span>
+                                            <span className="font-semibold text-gray-600">Rp {new Intl.NumberFormat('id-ID').format(selectedOrder.total)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-xs mb-1">
+                                            <span className="text-gray-400">Biaya Admin ({selectedOrder.admin_fee_percentage}%)</span>
+                                            <span className="font-semibold text-red-500">- Rp {new Intl.NumberFormat('id-ID').format(selectedOrder.admin_fee)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-sm font-bold pt-1 border-t border-gray-50 mt-1">
+                                            <span className="text-teal-700">Pendapatan Bersih</span>
+                                            <span className="text-teal-700">Rp {new Intl.NumberFormat('id-ID').format(selectedOrder.publisher_amount)}</span>
+                                        </div>
+                                    </div>
                                 </div>
+
+                                {selectedOrder.description && (
+                                    <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                                        <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1">Deskripsi Tambahan</p>
+                                        <p className="text-xs text-blue-700 leading-relaxed">{selectedOrder.description}</p>
+                                    </div>
+                                )}
 
                                 {/* Target Links */}
                                 {selectedOrder.links && selectedOrder.links.length > 0 && (
@@ -331,21 +372,44 @@ export default function Pemasukkan({ pemasukkan = [], stats = { total_saldo: 0, 
                                     <div className="mt-6 pt-5 border-t border-gray-100">
                                         <div className="bg-teal-50 border border-teal-100 rounded-xl p-4">
                                             <h4 className="font-semibold text-teal-900 mb-1 text-sm">Update Status ke Published</h4>
-                                            <p className="text-xs text-teal-700 mb-3">Masukkan link artikel yang sudah tayang di web Anda.</p>
+                                            <p className="text-xs text-teal-700 mb-3">
+                                                {selectedOrder.quantity > 1 
+                                                    ? `Masukkan ${selectedOrder.quantity} link artikel yang sudah tayang di web Anda.`
+                                                    : 'Masukkan link artikel yang sudah tayang di web Anda.'}
+                                            </p>
                                             
                                             <form onSubmit={(e) => submitPublishLink(e, selectedOrder.id)}>
                                                 <div className="space-y-3">
-                                                    <div>
-                                                        <input 
-                                                            type="url" 
-                                                            required
-                                                            placeholder="https://domain.com/artikel-baru"
-                                                            value={publishData.published_link}
-                                                            onChange={e => setPublishData('published_link', e.target.value)}
-                                                            className="w-full px-3 py-2 bg-white border border-teal-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-                                                        />
-                                                        {publishErrors.published_link && <p className="text-xs text-red-500 mt-1">{publishErrors.published_link}</p>}
-                                                    </div>
+                                                    {selectedOrder.quantity > 1 ? (
+                                                        Array(selectedOrder.quantity).fill(0).map((_, i) => (
+                                                            <div key={i}>
+                                                                <input 
+                                                                    type="url" 
+                                                                    required
+                                                                    placeholder={`Link Artikel ${i + 1}`}
+                                                                    value={publishData.published_links[i] || ''}
+                                                                    onChange={e => {
+                                                                        const newLinks = [...publishData.published_links];
+                                                                        newLinks[i] = e.target.value;
+                                                                        setPublishData('published_links', newLinks);
+                                                                    }}
+                                                                    className="w-full px-3 py-2 bg-white border border-teal-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm mb-1"
+                                                                />
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <div>
+                                                            <input 
+                                                                type="url" 
+                                                                required
+                                                                placeholder="https://domain.com/artikel-baru"
+                                                                value={publishData.published_link}
+                                                                onChange={e => setPublishData('published_link', e.target.value)}
+                                                                className="w-full px-3 py-2 bg-white border border-teal-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                                                            />
+                                                            {publishErrors.published_link && <p className="text-xs text-red-500 mt-1">{publishErrors.published_link}</p>}
+                                                        </div>
+                                                    )}
                                                     <button 
                                                         type="submit" 
                                                         disabled={publishProcessing}
@@ -360,12 +424,24 @@ export default function Pemasukkan({ pemasukkan = [], stats = { total_saldo: 0, 
                                 )}
 
                                 {/* Display published link if already published/completed */}
-                                {(selectedOrder.status === 'published' || selectedOrder.status === 'completed') && selectedOrder.published_link && (
+                                {(selectedOrder.status === 'published' || selectedOrder.status === 'completed') && (selectedOrder.published_link || selectedOrder.published_links) && (
                                     <div className="mt-6 pt-5 border-t border-gray-100">
-                                        <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1.5">Link Telah Dipublish</p>
-                                        <a href={selectedOrder.published_link} target="_blank" rel="noreferrer" className="inline-block px-3 py-2 w-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm hover:bg-emerald-100 transition-colors rounded-lg break-all">
-                                            {selectedOrder.published_link}
-                                        </a>
+                                        <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-2">Link Telah Dipublish</p>
+                                        <div className="space-y-2">
+                                            {selectedOrder.published_links && selectedOrder.published_links.length > 0 ? (
+                                                selectedOrder.published_links.map((link, i) => (
+                                                    <a key={i} href={link} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 w-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs hover:bg-emerald-100 transition-colors rounded-lg break-all font-medium">
+                                                        <ArrowUpRight className="w-3 h-3 shrink-0" />
+                                                        {link}
+                                                    </a>
+                                                ))
+                                            ) : (
+                                                <a href={selectedOrder.published_link} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2 w-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs hover:bg-emerald-100 transition-colors rounded-lg break-all font-medium">
+                                                    <ArrowUpRight className="w-3 h-3 shrink-0" />
+                                                    {selectedOrder.published_link}
+                                                </a>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>

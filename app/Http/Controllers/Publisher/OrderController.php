@@ -24,12 +24,15 @@ class OrderController extends Controller
         }
 
         $validated = $request->validate([
-            'published_link' => 'required|url',
+            'published_link' => 'required_without:published_links|url|nullable',
+            'published_links' => 'required_without:published_link|array|nullable',
+            'published_links.*' => 'url',
         ]);
 
         $order->update([
             'status' => 'published',
-            'published_link' => $validated['published_link'],
+            'published_link' => $validated['published_link'] ?? null,
+            'published_links' => $validated['published_links'] ?? null,
         ]);
 
         return back()->with('success', 'Link artikel berhasil disubmit dan status pesanan diperbarui.');

@@ -22,6 +22,7 @@ class SettingController extends Controller
         $validated = $request->validate([
             'wa_number' => 'nullable|string|max:50',
             'wa_message' => 'nullable|string',
+            'admin_fee_percentage' => 'nullable|numeric|min:0|max:100',
         ]);
 
         foreach ($validated as $key => $value) {
