@@ -68,7 +68,8 @@ export default function Pemasukkan({ pemasukkan = [], stats = { total_saldo: 0, 
         reset: publishReset 
     } = useForm({ 
         published_link: '',
-        published_links: [] as string[]
+        published_links: [] as string[],
+        notes: ''
     });
 
     const submitWithdrawal = (e: React.FormEvent) => {
@@ -214,7 +215,8 @@ export default function Pemasukkan({ pemasukkan = [], stats = { total_saldo: 0, 
                                                         setSelectedOrder(item);
                                                         setPublishData({
                                                             published_link: item.published_link || '',
-                                                            published_links: item.published_links || Array(item.quantity).fill('')
+                                                            published_links: item.published_links || Array(item.quantity).fill(''),
+                                                            notes: item.notes || ''
                                                         });
                                                         setIsDetailModalOpen(true);
                                                     }}
@@ -410,6 +412,17 @@ export default function Pemasukkan({ pemasukkan = [], stats = { total_saldo: 0, 
                                                             {publishErrors.published_link && <p className="text-xs text-red-500 mt-1">{publishErrors.published_link}</p>}
                                                         </div>
                                                     )}
+                                                    
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-teal-700 uppercase tracking-wider mb-1">Catatan / Keterangan Tambahan</label>
+                                                        <textarea 
+                                                            placeholder="Berikan info tambahan jika perlu (misal: penempatan link, dll)"
+                                                            value={publishData.notes}
+                                                            onChange={e => setPublishData('notes', e.target.value)}
+                                                            className="w-full px-3 py-2 bg-white border border-teal-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm min-h-[80px] resize-none"
+                                                        ></textarea>
+                                                        {publishErrors.notes && <p className="text-xs text-red-500 mt-1">{publishErrors.notes}</p>}
+                                                    </div>
                                                     <button 
                                                         type="submit" 
                                                         disabled={publishProcessing}
@@ -442,6 +455,13 @@ export default function Pemasukkan({ pemasukkan = [], stats = { total_saldo: 0, 
                                                 </a>
                                             )}
                                         </div>
+
+                                        {selectedOrder.notes && (
+                                            <div className="mt-3 p-3 bg-gray-50 border border-gray-100 rounded-lg">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Catatan Anda</p>
+                                                <p className="text-xs text-gray-600 italic whitespace-pre-wrap">{selectedOrder.notes}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
