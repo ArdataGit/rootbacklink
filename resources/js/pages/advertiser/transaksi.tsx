@@ -230,7 +230,7 @@ export default function Transaksi({ orders = [] }: Props) {
                                     
                                     {selectedOrder.description && (
                                         <div>
-                                            <p className="text-[11px] font-bold text-gray-400 mb-1">Pesan/Detail:</p>
+                                            <p className="text-[11px] font-bold text-gray-400 mb-1">Detail Brief Pesanan:</p>
                                             <div className="p-4 bg-gray-50 rounded-2xl text-xs text-gray-600 leading-relaxed font-medium">
                                                 {selectedOrder.description}
                                             </div>
@@ -275,11 +275,11 @@ export default function Transaksi({ orders = [] }: Props) {
                                         )}
                                     </div>
 
-                                    {selectedOrder.notes && (
+                                    {selectedOrder.published_desc && (
                                         <div>
-                                            <p className="text-[11px] font-bold text-gray-400 mb-1">Catatan dari Publisher:</p>
+                                            <p className="text-[11px] font-bold text-gray-400 mb-1">Deskripsi Hasil dari Publisher:</p>
                                             <div className="p-4 bg-sky-50 rounded-2xl text-xs text-sky-700 leading-relaxed font-bold border border-sky-100">
-                                                {selectedOrder.notes}
+                                                {selectedOrder.published_desc}
                                             </div>
                                         </div>
                                     )}

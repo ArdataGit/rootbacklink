@@ -11,6 +11,7 @@ interface AdminOrder extends Order {
     admin_fee_percentage: number;
     publisher_amount: number;
     description?: string;
+    published_desc?: string;
     published_links?: string[];
 }
 
@@ -260,7 +261,7 @@ export default function AdminOrders({ orders = [] }: Props) {
 
                              {selectedOrder.description && (
                                 <div>
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Deskripsi/Detail</p>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Brief Advertiser</p>
                                     <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-100">{selectedOrder.description}</p>
                                 </div>
                             )}
@@ -279,10 +280,10 @@ export default function AdminOrders({ orders = [] }: Props) {
                                 </div>
                             )}
 
-                            {selectedOrder.notes && (
+                            {selectedOrder.published_desc && (
                                 <div>
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Catatan</p>
-                                    <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{selectedOrder.notes}</p>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Deskripsi Hasil Publisher</p>
+                                    <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{selectedOrder.published_desc}</p>
                                 </div>
                             )}
 

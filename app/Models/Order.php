@@ -10,7 +10,7 @@ class Order extends Model
         'user_id', 'blog_id', 'invoice_id', 'total', 'quantity', 
         'admin_fee', 'publisher_amount', 'admin_fee_percentage',
         'backlink_type', 'article_source', 'description',
-        'instructions', 'doc_link', 'notes', 'status', 'published_link', 'published_links',
+        'instructions', 'doc_link', 'notes', 'published_desc', 'status', 'published_link', 'published_links',
         'tripay_reference', 'tripay_checkout_url'
     ];
 

@@ -54,6 +54,7 @@ export interface Order {
     instructions?: string;
     doc_link?: string;
     notes?: string;
+    published_desc?: string;
     status: 'unpaid' | 'paid' | 'published' | 'completed';
     published_link?: string;
     published_links?: string[];

@@ -1,8 +1,9 @@
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem, Blog, Category } from '@/types';
-import { Search, Filter, Globe, BarChart, Tag, ShoppingCart, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Filter, Globe, BarChart, Tag, ShoppingCart, ArrowUpDown, ArrowUp, ArrowDown, Info } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 
 interface Props {
     blogs: Blog[];
@@ -27,28 +28,26 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function LihatWeb({ blogs = [], categories = [], filters = {} }: Props) {
-    // Add safety guard for missing props
     if (!filters) filters = {};
     
     const [search, setSearch] = useState(filters.search || '');
     const [categoryId, setCategoryId] = useState(filters.category_id || '');
-    
-    // Range Filters
     const [daMin, setDaMin] = useState(filters.da_min || '');
     const [daMax, setDaMax] = useState(filters.da_max || '');
     const [paMin, setPaMin] = useState(filters.pa_min || '');
     const [paMax, setPaMax] = useState(filters.pa_max || '');
     const [ssMin, setSsMin] = useState(filters.ss_min || '');
     const [ssMax, setSsMax] = useState(filters.ss_max || '');
-
-    // Sorting
     const [sort, setSort] = useState(filters.sort || 'created_at');
     const [direction, setDirection] = useState<'asc'|'desc'>(filters.direction || 'desc');
 
+    // UI States
+    const [selectedBlogForPrice, setSelectedBlogForPrice] = useState<Blog | null>(null);
+    const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
+
     const handleSearch = () => {
         router.get('/lihat-web', { 
-            search, 
-            category_id: categoryId,
+            search, category_id: categoryId,
             da_min: daMin, da_max: daMax,
             pa_min: paMin, pa_max: paMax,
             ss_min: ssMin, ss_max: ssMax,
@@ -61,13 +60,11 @@ export default function LihatWeb({ blogs = [], categories = [], filters = {} }: 
         setSort(field);
         setDirection(newDirection);
         router.get('/lihat-web', { 
-            search, 
-            category_id: categoryId,
+            search, category_id: categoryId,
             da_min: daMin, da_max: daMax,
             pa_min: paMin, pa_max: paMax,
             ss_min: ssMin, ss_max: ssMax,
-            sort: field, 
-            direction: newDirection
+            sort: field, direction: newDirection
         }, { preserveState: true });
     };
 
@@ -77,6 +74,16 @@ export default function LihatWeb({ blogs = [], categories = [], filters = {} }: 
         setPaMin(''); setPaMax('');
         setSsMin(''); setSsMax('');
         router.get('/lihat-web', { sort: 'created_at', direction: 'desc' }, { preserveState: true });
+    };
+
+    const getMinPrice = (blog: Blog) => {
+        const prices = [];
+        if (blog.has_backlink_authority) {
+            if (blog.price_authority_advertiser) prices.push(Number(blog.price_authority_advertiser));
+            if (blog.price_authority_publisher) prices.push(Number(blog.price_authority_publisher));
+        }
+        if (blog.has_backlink_sidebar && blog.price_sidebar) prices.push(Number(blog.price_sidebar));
+        return prices.length > 0 ? Math.min(...prices) : 0;
     };
 
     const SortIcon = ({ field }: { field: string }) => {
@@ -96,7 +103,6 @@ export default function LihatWeb({ blogs = [], categories = [], filters = {} }: 
                     </div>
                 </div>
 
-                {/* Filters Panel */}
                 <div className="bg-white p-5 rounded-xl border border-gray-100 mb-6 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div className="md:col-span-5 relative">
@@ -127,54 +133,37 @@ export default function LihatWeb({ blogs = [], categories = [], filters = {} }: 
                             </select>
                         </div>
                         <div className="md:col-span-4 flex items-end gap-2">
-                            <button
-                                onClick={handleSearch}
-                                className="flex-1 py-2 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-sm"
-                            >
-                                <Filter className="w-4 h-4" />
-                                Terapkan Filter
+                            <button onClick={handleSearch} className="flex-1 py-2 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-sm">
+                                <Filter className="w-4 h-4" /> Terapkan Filter
                             </button>
-                            <button
-                                onClick={resetFilters}
-                                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold rounded-lg transition-colors flex items-center justify-center text-sm"
-                            >
+                            <button onClick={resetFilters} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold rounded-lg transition-colors flex items-center justify-center text-sm">
                                 Reset
                             </button>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-gray-100 pt-4">
-                        {/* DA Range */}
                         <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
                             <span className="text-xs font-semibold text-gray-500 w-8 text-center shrink-0">DA</span>
-                            <input type="number" placeholder="Min" value={daMin} onChange={e => setDaMin(e.target.value)}
-                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
+                            <input type="number" placeholder="Min" value={daMin} onChange={e => setDaMin(e.target.value)} className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
                             <span className="text-gray-400">-</span>
-                            <input type="number" placeholder="Max" value={daMax} onChange={e => setDaMax(e.target.value)}
-                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
+                            <input type="number" placeholder="Max" value={daMax} onChange={e => setDaMax(e.target.value)} className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
                         </div>
-                        {/* PA Range */}
                         <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
                             <span className="text-xs font-semibold text-gray-500 w-8 text-center shrink-0">PA</span>
-                            <input type="number" placeholder="Min" value={paMin} onChange={e => setPaMin(e.target.value)}
-                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
+                            <input type="number" placeholder="Min" value={paMin} onChange={e => setPaMin(e.target.value)} className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
                             <span className="text-gray-400">-</span>
-                            <input type="number" placeholder="Max" value={paMax} onChange={e => setPaMax(e.target.value)}
-                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
+                            <input type="number" placeholder="Max" value={paMax} onChange={e => setPaMax(e.target.value)} className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
                         </div>
-                        {/* SS Range */}
                         <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
                             <span className="text-xs font-semibold text-gray-500 w-8 text-center shrink-0">SS %</span>
-                            <input type="number" placeholder="Min" value={ssMin} onChange={e => setSsMin(e.target.value)}
-                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
+                            <input type="number" placeholder="Min" value={ssMin} onChange={e => setSsMin(e.target.value)} className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
                             <span className="text-gray-400">-</span>
-                            <input type="number" placeholder="Max" value={ssMax} onChange={e => setSsMax(e.target.value)}
-                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
+                            <input type="number" placeholder="Max" value={ssMax} onChange={e => setSsMax(e.target.value)} className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded text-xs focus:ring-1 focus:ring-teal-500" />
                         </div>
                     </div>
                 </div>
 
-                {/* Data Table */}
                 <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-100">
@@ -207,7 +196,7 @@ export default function LihatWeb({ blogs = [], categories = [], filters = {} }: 
                                     </th>
                                     <th scope="col" className="px-5 py-3 text-right">
                                         <button className="flex items-center justify-end ml-auto text-xs font-semibold text-gray-500 uppercase tracking-wider group hover:text-teal-600" onClick={() => handleSort('price')}>
-                                            Jenis & Harga Backlink <SortIcon field="price" />
+                                            Jenis & Harga  <SortIcon field="price" />
                                         </button>
                                     </th>
                                     <th scope="col" className="px-5 py-3 text-center">
@@ -225,87 +214,159 @@ export default function LihatWeb({ blogs = [], categories = [], filters = {} }: 
                                         </td>
                                     </tr>
                                 ) : (
-                                    blogs.map(blog => (
-                                        <tr key={blog.id} className="hover:bg-teal-50/40 transition-colors">
-                                            <td className="px-5 py-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex-shrink-0 h-10 w-10 bg-teal-50 rounded-lg flex items-center justify-center border border-teal-100">
-                                                        <Globe className="h-5 w-5 text-teal-600" />
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-sm font-bold text-gray-800">{blog.domain}</div>
-                                                        <div className="flex items-center mt-1 text-xs text-gray-500">
-                                                            <Tag className="h-3 w-3 mr-1" />
-                                                            {blog.category?.name}
+                                    blogs.map(blog => {
+                                        const minPrice = getMinPrice(blog);
+                                        return (
+                                            <tr key={blog.id} className="hover:bg-teal-50/40 transition-colors">
+                                                <td className="px-5 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex-shrink-0 h-10 w-10 bg-teal-50 rounded-lg flex items-center justify-center border border-teal-100">
+                                                            <Globe className="h-5 w-5 text-teal-600" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-sm font-bold text-gray-800">{blog.domain}</div>
+                                                            <div className="flex items-center mt-1 text-xs text-gray-500">
+                                                                <Tag className="h-3 w-3 mr-1" />
+                                                                {blog.category?.name}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-5 py-4 text-center whitespace-nowrap">
-                                                <span className="inline-flex items-center justify-center px-2 py-1 rounded bg-teal-50 text-teal-700 font-bold text-sm border border-teal-100 min-w-[40px]">
-                                                    {blog.da}
-                                                </span>
-                                            </td>
-                                            <td className="px-5 py-4 text-center whitespace-nowrap">
-                                                <span className="inline-flex items-center justify-center px-2 py-1 rounded bg-sky-50 text-sky-700 font-bold text-sm border border-sky-100 min-w-[40px]">
-                                                    {blog.pa}
-                                                </span>
-                                            </td>
-                                            <td className="px-5 py-4 text-center whitespace-nowrap">
-                                                <span className="inline-flex items-center justify-center px-2 py-1 rounded bg-rose-50 text-rose-700 font-bold text-sm border border-rose-100 min-w-[40px]">
-                                                    {blog.ss}%
-                                                </span>
-                                            </td>
-                                            <td className="px-5 py-4 text-center whitespace-nowrap">
-                                                <div className="flex flex-col items-center">
-                                                    <span className="text-sm font-bold text-gray-700">
-                                                        {blog.traffic >= 1000 ? `${(blog.traffic/1000).toFixed(1)}k` : blog.traffic}
+                                                </td>
+                                                <td className="px-5 py-4 text-center whitespace-nowrap">
+                                                    <span className="inline-flex items-center justify-center px-2 py-1 rounded bg-teal-50 text-teal-700 font-bold text-sm border border-teal-100 min-w-[40px]">
+                                                        {blog.da}
                                                     </span>
-                                                    {blog.indexing === 'yes' && (
-                                                        <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-1.5 rounded mt-1">Terindeks</span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-5 py-4 text-right whitespace-nowrap">
-                                                <div className="flex flex-col items-end gap-1.5">
-                                                    {blog.has_backlink_authority && (
-                                                        <div className="inline-flex items-center gap-2">
-                                                            <span className="text-[10px] font-semibold text-teal-600 uppercase tracking-wider">Authority</span>
-                                                            <span className="inline-flex items-center px-2 py-1 rounded bg-gray-50 text-gray-800 text-xs font-bold border border-gray-200">
-                                                                Rp {Number(blog.price_authority_advertiser).toLocaleString()}
+                                                </td>
+                                                <td className="px-5 py-4 text-center whitespace-nowrap">
+                                                    <span className="inline-flex items-center justify-center px-2 py-1 rounded bg-sky-50 text-sky-700 font-bold text-sm border border-sky-100 min-w-[40px]">
+                                                        {blog.pa}
+                                                    </span>
+                                                </td>
+                                                <td className="px-5 py-4 text-center whitespace-nowrap">
+                                                    <span className="inline-flex items-center justify-center px-2 py-1 rounded bg-rose-50 text-rose-700 font-bold text-sm border border-rose-100 min-w-[40px]">
+                                                        {blog.ss}%
+                                                    </span>
+                                                </td>
+                                                <td className="px-5 py-4 text-center whitespace-nowrap">
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-sm font-bold text-gray-700">
+                                                            {blog.traffic >= 1000 ? `${(blog.traffic/1000).toFixed(1)}k` : blog.traffic}
+                                                        </span>
+                                                        {blog.indexing === 'yes' && (
+                                                            <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-1.5 rounded mt-1">Terindeks</span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-5 py-4 text-right whitespace-nowrap">
+                                                    <button 
+                                                        onClick={() => {
+                                                            setSelectedBlogForPrice(blog);
+                                                            setIsPriceModalOpen(true);
+                                                        }}
+                                                        className="group flex flex-col items-end gap-0.5 hover:opacity-80 transition-opacity"
+                                                    >
+                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Start from:</span>
+                                                        <div className="flex items-center gap-1.5 p-1 px-2.5 bg-emerald-50 border border-emerald-100 rounded-lg group-hover:border-emerald-300 transition-colors shadow-sm">
+                                                            <span className="text-sm font-extrabold text-emerald-600">
+                                                                Rp {minPrice.toLocaleString('id-ID')}
                                                             </span>
+                                                            <Info className="w-3 h-3 text-emerald-400" />
                                                         </div>
-                                                    )}
-                                                    {blog.has_backlink_sidebar && (
-                                                        <div className="inline-flex items-center gap-2">
-                                                            <span className="text-[10px] font-semibold text-indigo-600 uppercase tracking-wider">Sidebar</span>
-                                                            <span className="inline-flex items-center px-2 py-1 rounded bg-gray-50 text-gray-800 text-xs font-bold border border-gray-200">
-                                                                Rp {Number(blog.price_sidebar).toLocaleString()}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-5 py-4 text-center whitespace-nowrap">
-                                                <button 
-                                                    onClick={() => router.get(`/checkout/${blog.id}`)}
-                                                    className="inline-flex items-center px-3 py-2 bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
-                                                    title="Pesan Backlink"
-                                                >
-                                                    <ShoppingCart className="w-4 h-4 mr-2" />
-                                                    Pesan
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
+                                                    </button>
+                                                </td>
+                                                <td className="px-5 py-4 text-center whitespace-nowrap">
+                                                    <button 
+                                                        onClick={() => router.get(`/checkout/${blog.id}`)}
+                                                        className="inline-flex items-center px-3 py-2 bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                                                        title="Pesan Backlink"
+                                                    >
+                                                        <ShoppingCart className="w-4 h-4 mr-2" />
+                                                        Pesan
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                                 )}
                             </tbody>
                         </table>
                     </div>
                 </div>
-
             </div>
+
+            {/* Price Detail Modal */}
+            <Dialog open={isPriceModalOpen} onOpenChange={setIsPriceModalOpen}>
+                <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-white border-gray-100 rounded-2xl shadow-2xl">
+                    <DialogHeader className="p-6 pb-2">
+                        <DialogTitle className="text-xl font-extrabold text-gray-800 flex items-center justify-between">
+                            <span>Detail Harga Backlink</span>
+                        </DialogTitle>
+                        <p className="text-xs text-gray-400 font-medium">{selectedBlogForPrice?.domain}</p>
+                    </DialogHeader>
+                    
+                    <div className="p-6 space-y-4">
+                        {selectedBlogForPrice && (
+                            <div className="grid gap-3">
+                                {selectedBlogForPrice.has_backlink_authority && (
+                                    <>
+                                        {selectedBlogForPrice.price_authority_advertiser && (
+                                            <div className="flex items-center justify-between p-4 bg-teal-50/50 rounded-xl border border-teal-100 shadow-sm transition-all hover:bg-teal-50">
+                                                <div>
+                                                    <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest mb-1">Authority (Artikel dari Anda)</p>
+                                                    <p className="text-xs text-teal-800/70 font-medium whitespace-pre-wrap">Anda mengirimkan artikel siap publis</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-lg font-black text-teal-700 leading-none">Rp {Number(selectedBlogForPrice.price_authority_advertiser).toLocaleString('id-ID')}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {selectedBlogForPrice.price_authority_publisher && (
+                                            <div className="flex items-center justify-between p-4 bg-emerald-50/50 rounded-xl border border-emerald-100 shadow-sm transition-all hover:bg-emerald-50">
+                                                <div>
+                                                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Authority (Artikel dari Pemilik Web)</p>
+                                                    <p className="text-xs text-emerald-800/70 font-medium whitespace-pre-wrap">Publisher yang akan menuliskan artikelnya</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-lg font-black text-emerald-700 leading-none">Rp {Number(selectedBlogForPrice.price_authority_publisher).toLocaleString('id-ID')}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                                
+                                {selectedBlogForPrice.has_backlink_sidebar && (
+                                    <div className="flex items-center justify-between p-4 bg-indigo-50/50 rounded-xl border border-indigo-100 shadow-sm">
+                                        <div>
+                                            <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1">Backlink Sidebar</p>
+                                            <p className="text-xs text-indigo-800/70 font-medium">Link di menu sidebar ({selectedBlogForPrice.sidebar_duration} hari)</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-lg font-black text-indigo-700">Rp {Number(selectedBlogForPrice.price_sidebar).toLocaleString('id-ID')}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        
+                        <div className="pt-4 mt-2">
+                            <button 
+                                onClick={() => {
+                                    if (selectedBlogForPrice) {
+                                        router.get(`/checkout/${selectedBlogForPrice.id}`);
+                                    }
+                                }}
+                                className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-teal-100 flex items-center justify-center gap-2 group"
+                            >
+                                <ShoppingCart className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                Pesan Sekarang
+                            </button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }
+
 
