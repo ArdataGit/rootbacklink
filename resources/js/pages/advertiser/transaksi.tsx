@@ -1,7 +1,8 @@
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem, Order } from '@/types';
-import { Receipt, Clock, CheckCircle2, XCircle, Search, Filter, ExternalLink } from 'lucide-react';
+import { Receipt, Clock, CheckCircle2, XCircle, Search, Filter, ExternalLink, MessageSquare } from 'lucide-react';
+import { usePage } from '@inertiajs/react';
 
 interface Props {
     orders: Order[];
@@ -14,9 +15,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
-import { Eye, MapPin, Building2, User as UserIcon, Globe, FileText, MessageSquare } from 'lucide-react';
+import { Eye, MapPin, Building2, User as UserIcon, Globe, FileText } from 'lucide-react';
 
 export default function Transaksi({ orders = [] }: Props) {
+    const { waSettings } = usePage<{ waSettings?: { number: string; message: string } }>().props;
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [detailOpen, setDetailOpen] = useState(false);
 
@@ -183,9 +185,14 @@ export default function Transaksi({ orders = [] }: Props) {
                             <p className="text-sm text-gray-400 font-medium">Tim Support kami siap membantu kendala transaksi Anda 24/7.</p>
                         </div>
                     </div>
-                    <button className="px-6 py-2.5 bg-teal-500 hover:bg-teal-400 text-white rounded-xl text-sm font-black transition-all shadow-lg shadow-teal-500/20 relative z-10 hover:-translate-y-1 active:scale-95">
+                    <a 
+                        href={`https://wa.me/${waSettings?.number?.replace(/\D/g, '').replace(/^0/, '62') || ''}?text=${encodeURIComponent(waSettings?.message || 'Halo Admin')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-6 py-2.5 bg-teal-500 hover:bg-teal-400 text-white rounded-xl text-sm font-black transition-all shadow-lg shadow-teal-500/20 relative z-10 hover:-translate-y-1 active:scale-95"
+                    >
                         Hubungi Admin
-                    </button>
+                    </a>
                 </div>
             </div>
 

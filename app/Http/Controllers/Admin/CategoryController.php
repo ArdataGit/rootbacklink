@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
@@ -17,28 +18,28 @@ class CategoryController extends Controller
             'categories' => $categories
         ]);
     }
-
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:categories,name',
         ]);
 
+        $validated['slug'] = Str::slug($validated['name']);
+
         Category::create($validated);
 
         return redirect()->back()->with('success', 'Kategori berhasil ditambahkan.');
     }
-
-    public function update(Request $request, Category $category)
-    {
+    public function update(Request $request, Category $category)    {
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
         ]);
 
+        $validated['slug'] = Str::slug($validated['name']);
+
         $category->update($validated);
 
-        return redirect()->back()->with('success', 'Kategori berhasil diperbarui.');
-    }
+        return redirect()->back()->with('success', 'Kategori berhasil diperbarui.');    }
 
     public function destroy(Category $category)
     {

@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { Wallet, ArrowUpRight, Receipt, ArrowRight, MessageCircle, Calendar, Eye } from 'lucide-react';
@@ -58,6 +58,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Pemasukkan({ pemasukkan = [], withdrawals = [], stats = { total_saldo: 0, withdrawable_balance: 0, bulan_ini: 0, total_pesanan: 0, active_withdrawal: null, has_bank_info: false }, auth }: Props) {
+    const { waSettings } = usePage<{ waSettings?: { number: string; message: string } }>().props;
     const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<IncomeRecord | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -96,10 +97,10 @@ export default function Pemasukkan({ pemasukkan = [], withdrawals = [], stats = 
         });
     };
 
-    const adminWhatsAppNumber = '6281234567890';
     const getWhatsAppUrl = (amount: number) => {
+        const phoneNumber = waSettings?.number?.replace(/\D/g, '').replace(/^0/, '62') || '';
         const text = `Halo Admin, saya *${auth.user.name}* (${auth.user.email}) ingin konfirmasi penarikan saldo sebesar *Rp ${new Intl.NumberFormat('id-ID').format(amount)}*. Mohon diproses, terima kasih.`;
-        return `https://wa.me/${adminWhatsAppNumber}?text=${encodeURIComponent(text)}`;
+        return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(text)}`;
     };
 
     return (

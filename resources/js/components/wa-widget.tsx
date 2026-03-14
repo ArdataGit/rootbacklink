@@ -2,9 +2,12 @@ import { MessageCircle } from 'lucide-react';
 import { usePage } from '@inertiajs/react';
 
 export default function WaWidget() {
-    const { waSettings } = usePage<{ waSettings?: { number: string; message: string } }>().props;
+    const { auth, waSettings } = usePage<{ 
+        auth: { user: { role: string } },
+        waSettings?: { number: string; message: string } 
+    }>().props;
 
-    if (!waSettings?.number) return null;
+    if (auth.user?.role === 'admin' || !waSettings?.number) return null;
 
     // Ensure number starts with 62 or code
     let phoneNumber = waSettings.number.replace(/\D/g, '');
