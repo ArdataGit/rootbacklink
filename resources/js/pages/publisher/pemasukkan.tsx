@@ -292,8 +292,8 @@ export default function Pemasukkan({ pemasukkan = [], withdrawals = [], stats = 
                                                     onClick={() => {
                                                         setSelectedOrder(item);
                                                         setPublishData({
-                                                            published_link: item.published_link || '',
-                                                            published_links: item.published_links || Array(item.quantity).fill(''),
+                                                            published_link: item.quantity === 1 ? (item.published_link || '') : '',
+                                                            published_links: item.quantity > 1 ? (item.published_links || Array(item.quantity).fill('')) : [],
                                                             published_desc: item.published_desc || ''
                                                         });
                                                         setIsDetailModalOpen(true);
