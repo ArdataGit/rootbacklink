@@ -11,22 +11,18 @@ class WithdrawalController extends Controller
 {
     public function store(Request $request)
     {
-        $request->validate([
-            'amount' => 'required|numeric|min:50000', // Assuming a minimum withdrawal of 50k for example
-        ]);
-
         $user = auth()->user();
 
-        // Calculate available balance
-        $totalGross = Order::whereHas('blog', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })->where('status', 'paid')->sum('total');
+        // Check if bank info is filled
+        if (!$user->bank_name || !$user->bank_account_number || !$user->bank_account_name) {
+            return redirect()->route('profile.edit')->with('warning', 'Silakan lengkapi data rekening bank Anda terlebih dahulu sebelum melakukan penarikan dana.');
+        }
 
-        $totalWithdrawn = Withdrawal::where('user_id', $user->id)
-            ->whereIn('status', ['pending', 'approved'])
-            ->sum('amount');
+        $request->validate([
+            'amount' => 'required|numeric|min:50000',
+        ]);
 
-        $availableBalance = $totalGross - $totalWithdrawn;
+        $availableBalance = $user->withdrawable_balance;
 
         if ($request->amount > $availableBalance) {
             return redirect()->back()->withErrors(['amount' => 'Nominal penarikan melebihi saldo tersedia.']);
@@ -34,7 +30,7 @@ class WithdrawalController extends Controller
 
         // Check if there's already a pending withdrawal
         $pendingExists = Withdrawal::where('user_id', $user->id)
-            ->where('status', 'pending')
+            ->whereIn('status', ['pending', 'on_progress'])
             ->exists();
 
         if ($pendingExists) {
@@ -45,6 +41,9 @@ class WithdrawalController extends Controller
             'user_id' => $user->id,
             'amount' => $request->amount,
             'status' => 'pending',
+            'bank_name' => $user->bank_name,
+            'bank_account_number' => $user->bank_account_number,
+            'bank_account_name' => $user->bank_account_name,
         ]);
 
         return redirect()->back()->with('success', 'Permintaan penarikan saldo berhasil dikirim.');

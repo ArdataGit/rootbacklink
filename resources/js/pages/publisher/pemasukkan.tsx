@@ -9,13 +9,16 @@ interface Withdrawal {
     id: number;
     amount: number;
     status: string;
+    rejection_reason?: string | null;
 }
 
 interface Stats {
     total_saldo: number;
+    withdrawable_balance: number;
     bulan_ini: number;
     total_pesanan: number;
-    pending_withdrawal?: Withdrawal | null;
+    active_withdrawal?: Withdrawal | null;
+    has_bank_info: boolean;
 }
 
 interface IncomeRecord {
@@ -44,6 +47,7 @@ interface IncomeRecord {
 
 interface Props {
     pemasukkan: IncomeRecord[];
+    withdrawals: Withdrawal[];
     stats: Stats;
     auth: { user: { name: string; email: string } };
 }
@@ -53,7 +57,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Pemasukkan Saya', href: '/pemasukkan' },
 ];
 
-export default function Pemasukkan({ pemasukkan = [], stats = { total_saldo: 0, bulan_ini: 0, total_pesanan: 0, pending_withdrawal: null }, auth }: Props) {
+export default function Pemasukkan({ pemasukkan = [], withdrawals = [], stats = { total_saldo: 0, withdrawable_balance: 0, bulan_ini: 0, total_pesanan: 0, active_withdrawal: null, has_bank_info: false }, auth }: Props) {
     const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<IncomeRecord | null>(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -108,6 +112,20 @@ export default function Pemasukkan({ pemasukkan = [], stats = { total_saldo: 0, 
                     <p className="mt-1.5 text-sm text-gray-500">Pantau penghasilan Anda dari pesanan backlink yang telah selesai.</p>
                 </div>
 
+                {!stats.has_bank_info && (
+                    <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3">
+                        <div className="p-2 bg-red-100 rounded-lg shrink-0">
+                            <ArrowRight className="w-5 h-5 text-red-600 rotate-90" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-bold text-red-800">Informasi Bank Belum Lengkap</p>
+                            <p className="text-xs text-red-600 mt-0.5">
+                                Harap lengkapi informasi bank Anda di halaman <Link href="/settings/profile" className="font-bold underline">Pengaturan Profil</Link> untuk dapat melakukan penarikan saldo.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div className="bg-white p-5 rounded-xl border border-gray-100">
@@ -116,27 +134,28 @@ export default function Pemasukkan({ pemasukkan = [], stats = { total_saldo: 0, 
                                 <Wallet className="w-5 h-5 text-emerald-600" />
                             </div>
                             <div>
-                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Saldo Aktif</p>
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Saldo</p>
                                 <h3 className="text-lg font-bold text-gray-800">Rp {new Intl.NumberFormat('id-ID').format(stats.total_saldo)}</h3>
+                                <p className="text-[10px] text-gray-400">Dapat ditarik: Rp {new Intl.NumberFormat('id-ID').format(stats.withdrawable_balance)}</p>
                             </div>
                         </div>
-                        {stats.pending_withdrawal ? (
+                        {stats.active_withdrawal ? (
                             <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
                                 <p className="text-xs text-amber-700 font-medium mb-2">
-                                    Penarikan Rp {new Intl.NumberFormat('id-ID').format(stats.pending_withdrawal.amount)} sedang diproses.
+                                    Penarikan Rp {new Intl.NumberFormat('id-ID').format(stats.active_withdrawal.amount)} ({stats.active_withdrawal.status.replace('_', ' ')}) sedang diproses.
                                 </p>
-                                <a href={getWhatsAppUrl(stats.pending_withdrawal.amount)} target="_blank" rel="noopener noreferrer"
+                                <a href={getWhatsAppUrl(stats.active_withdrawal.amount)} target="_blank" rel="noopener noreferrer"
                                     className="w-full flex items-center justify-center px-3 py-2 rounded-lg text-xs font-semibold text-white bg-green-500 hover:bg-green-600 transition-colors">
                                     <MessageCircle className="w-4 h-4 mr-1.5" /> Hubungi Admin (WA)
                                 </a>
                             </div>
                         ) : (
-                            <button onClick={() => setIsWithdrawModalOpen(true)} disabled={stats.total_saldo < 50000}
-                                className={`w-full flex items-center justify-center px-3 py-2 rounded-lg text-xs font-semibold text-white transition-colors ${stats.total_saldo >= 50000 ? 'bg-teal-500 hover:bg-teal-600' : 'bg-gray-300 cursor-not-allowed'}`}>
+                            <button onClick={() => setIsWithdrawModalOpen(true)} disabled={stats.withdrawable_balance < 50000 || !stats.has_bank_info}
+                                className={`w-full flex items-center justify-center px-3 py-2 rounded-lg text-xs font-semibold text-white transition-colors ${stats.withdrawable_balance >= 50000 && stats.has_bank_info ? 'bg-teal-500 hover:bg-teal-600' : 'bg-gray-300 cursor-not-allowed'}`}>
                                 Tarik Saldo <ArrowRight className="w-4 h-4 ml-1.5" />
                             </button>
                         )}
-                        {stats.total_saldo < 50000 && !stats.pending_withdrawal && (
+                        {stats.withdrawable_balance < 50000 && !stats.active_withdrawal && (
                             <p className="text-[10px] text-gray-400 mt-1.5 text-center">Minimal penarikan Rp 50.000</p>
                         )}
                     </div>
@@ -157,6 +176,63 @@ export default function Pemasukkan({ pemasukkan = [], stats = { total_saldo: 0, 
                             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Pesanan</p>
                             <h3 className="text-lg font-bold text-gray-800">{stats.total_pesanan}</h3>
                         </div>
+                    </div>
+                </div>
+
+                {/* Withdrawal History Table */}
+                <div className="bg-white rounded-xl border border-gray-100 overflow-hidden mb-6">
+                    <div className="px-5 py-4 border-b border-gray-50 flex justify-between items-center">
+                        <h2 className="text-base font-semibold text-gray-800">Riwayat Penarikan Dana</h2>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full">
+                            <thead>
+                                <tr className="bg-gray-50 border-b border-gray-100">
+                                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                    <th className="px-5 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Nominal</th>
+                                    <th className="px-5 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {withdrawals.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={3} className="px-5 py-10 text-center text-sm text-gray-400">
+                                            Belum ada riwayat penarikan.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    withdrawals.map((w) => (
+                                        <tr key={w.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-5 py-3.5 text-sm text-gray-600">
+                                                {(w as any).created_at ? new Date((w as any).created_at).toLocaleDateString('id-ID') : '-'}
+                                            </td>
+                                            <td className="px-5 py-3.5 text-right text-sm font-bold text-gray-800">
+                                                Rp {new Intl.NumberFormat('id-ID').format(w.amount)}
+                                            </td>
+                                            <td className="px-5 py-3.5 text-center">
+                                                <div className="flex flex-col items-center">
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                                                        w.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                        w.status === 'on_progress' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                                        w.status === 'pending' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                                        'bg-red-50 text-red-600 border-red-100'
+                                                    }`}>
+                                                        {w.status === 'completed' ? 'Sudah Dicairkan' : 
+                                                         w.status === 'on_progress' ? 'On Progress' : 
+                                                         w.status === 'pending' ? 'Pending' : 'Ditolak'}
+                                                    </span>
+                                                    {w.status === 'rejected' && w.rejection_reason && (
+                                                        <p className="text-[10px] text-red-500 mt-1 max-w-[150px] italic">
+                                                            Ket: {w.rejection_reason}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -248,11 +324,17 @@ export default function Pemasukkan({ pemasukkan = [], stats = { total_saldo: 0, 
                             <label className="block text-sm font-semibold text-gray-600 mb-1.5">Nominal Penarikan</label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm">Rp</span>
-                                <input type="number" value={data.amount} onChange={e => setData('amount', e.target.value)}
+                                <input 
+                                    type="text" 
+                                    value={data.amount ? Number(data.amount).toLocaleString('id-ID') : ''} 
+                                    onChange={e => {
+                                        const val = e.target.value.replace(/\D/g, '');
+                                        setData('amount', val);
+                                    }}
                                     className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all font-semibold text-gray-800"
-                                    placeholder="50000" min="50000" max={stats.total_saldo} required />
+                                    placeholder="50.000" required />
                             </div>
-                            <p className="text-xs text-gray-400 mt-1.5">Maksimal: Rp {new Intl.NumberFormat('id-ID').format(stats.total_saldo)}</p>
+                            <p className="text-xs text-gray-400 mt-1.5">Dapat ditarik: Rp {new Intl.NumberFormat('id-ID').format(stats.withdrawable_balance)}</p>
                             {errors.amount && <p className="text-xs text-red-500 mt-1">{errors.amount}</p>}
                         </div>
                         <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">

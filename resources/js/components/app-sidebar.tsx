@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Globe, DollarSign, Search, Receipt, Shield, Database, Image as ImageIcon, Sparkles, Settings } from 'lucide-react';
+import { LayoutGrid, Globe, DollarSign, Search, Receipt, Shield, Database, Image as ImageIcon, Sparkles, Settings, Users, Banknote } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -26,7 +26,7 @@ const mainNavItems: NavItem[] = [
 
 const adminNavItems: NavItem[] = [
     {
-        title: 'Blog Hub (Approve/Reject)',
+        title: 'Blog Hub',
         href: '/admin/blogs',
         icon: Shield,
     },
@@ -34,6 +34,16 @@ const adminNavItems: NavItem[] = [
         title: 'Data Transaksi',
         href: '/admin/orders',
         icon: Receipt,
+    },
+    {
+        title: 'Permintaan Penarikan',
+        href: '/admin/withdrawals',
+        icon: DollarSign,
+    },
+    {
+        title: 'Data Users & Saldo',
+        href: '/admin/users',
+        icon: Users,
     },
     {
         title: 'Kategori Master',

@@ -15,6 +15,10 @@ class Withdrawal extends Model
         'user_id',
         'amount',
         'status',
+        'bank_name',
+        'bank_account_number',
+        'bank_account_name',
+        'rejection_reason',
     ];
 
     public function user()

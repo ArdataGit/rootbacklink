@@ -122,6 +122,53 @@ export default function Profile({
                                     </div>
                                 </div>
 
+                                <div className="space-y-6 pt-6">
+                                    <Heading
+                                        variant="small"
+                                        title="Informasi Rekening Bank"
+                                        description="Informasi ini digunakan untuk pencairan dana"
+                                    />
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="bank_name">Nama Bank</Label>
+                                        <Input
+                                            id="bank_name"
+                                            type="text"
+                                            className="mt-1 block w-full"
+                                            defaultValue={(auth.user.bank_name as string) || ''}
+                                            name="bank_name"
+                                            placeholder="BCA / Mandiri / BNI"
+                                        />
+                                        <InputError className="mt-2" message={errors.bank_name} />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="bank_account_number">Nomor Rekening</Label>
+                                        <Input
+                                            id="bank_account_number"
+                                            type="text"
+                                            className="mt-1 block w-full"
+                                            defaultValue={(auth.user.bank_account_number as string) || ''}
+                                            name="bank_account_number"
+                                            placeholder="1234567890"
+                                        />
+                                        <InputError className="mt-2" message={errors.bank_account_number} />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="bank_account_name">Nama Pemilik Rekening</Label>
+                                        <Input
+                                            id="bank_account_name"
+                                            type="text"
+                                            className="mt-1 block w-full"
+                                            defaultValue={(auth.user.bank_account_name as string) || ''}
+                                            name="bank_account_name"
+                                            placeholder="Nama sesuai buku tabungan"
+                                        />
+                                        <InputError className="mt-2" message={errors.bank_account_name} />
+                                    </div>
+                                </div>
+
                                 {mustVerifyEmail &&
                                     auth.user.email_verified_at === null && (
                                         <div>

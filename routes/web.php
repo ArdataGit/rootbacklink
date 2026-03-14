@@ -112,13 +112,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->whereIn('status', ['pending', 'approved'])
                 ->sum('amount');
 
-            $totalSaldo = $totalGross - $totalWithdrawn;
+            $totalSaldo = $user->balance;
+            $withdrawableBalance = $user->withdrawable_balance;
 
-            // Check for existing pending request to disable button
-            $pendingWithdrawal = \App\Models\Withdrawal::where('user_id', $user->id)
-                ->where('status', 'pending')
+            // Fetch all withdrawals for history
+            $withdrawals = \App\Models\Withdrawal::where('user_id', $user->id)
                 ->latest()
-                ->first();
+                ->get();
+
+            // Check for existing pending/on_progress request to disable button
+            $activeWithdrawal = $withdrawals->whereIn('status', ['pending', 'on_progress'])->first();
 
             // Metrics for current month
             $currentMonth = now()->month;
@@ -132,11 +135,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             return Inertia::render('publisher/pemasukkan', [
             'pemasukkan' => $pemasukkan,
+            'withdrawals' => $withdrawals,
             'stats' => [
             'total_saldo' => $totalSaldo,
+            'withdrawable_balance' => $withdrawableBalance,
             'bulan_ini' => $bulanIni,
             'total_pesanan' => $pemasukkan->count(),
-            'pending_withdrawal' => $pendingWithdrawal
+            'active_withdrawal' => $activeWithdrawal,
+            'has_bank_info' => !empty($user->bank_name) && !empty($user->bank_account_number) && !empty($user->bank_account_name)
             ]
             ]);
         }
@@ -169,6 +175,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             // Admin Order Management
             Route::get('orders', [\App\Http\Controllers\Admin\OrderController::class , 'index'])->name('admin.orders.index');
             Route::patch('orders/{order}/status', [\App\Http\Controllers\Admin\OrderController::class , 'updateStatus'])->name('admin.orders.update-status');
+            
+            // Admin Withdrawal Management
+            Route::get('withdrawals', [\App\Http\Controllers\Admin\WithdrawalController::class , 'index'])->name('admin.withdrawals.index');
+            Route::patch('withdrawals/{withdrawal}', [\App\Http\Controllers\Admin\WithdrawalController::class , 'update'])->name('admin.withdrawals.update');
+
+            // Admin User Management
+            Route::get('users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.users.index');
+
             // Admin Settings
             Route::get('settings', [\App\Http\Controllers\Admin\SettingController::class, 'index'])->name('admin.settings.index');
             Route::post('settings', [\App\Http\Controllers\Admin\SettingController::class, 'store'])->name('admin.settings.store');

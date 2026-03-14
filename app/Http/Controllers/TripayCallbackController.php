@@ -38,7 +38,16 @@ class TripayCallbackController extends Controller
         switch ($tripayStatus) {
             case 'PAID':
                 $order->update(['status' => 'paid']);
-                Log::info('Tripay callback: order paid', ['invoice' => $order->invoice_id]);
+                
+                // Increment publisher balance
+                if ($order->blog && $order->blog->user) {
+                    $order->blog->user->increment('balance', $order->publisher_amount);
+                }
+                
+                Log::info('Tripay callback: order paid and balance incremented', [
+                    'invoice' => $order->invoice_id,
+                    'publisher_id' => $order->blog->user_id ?? 'unknown'
+                ]);
                 break;
             case 'EXPIRED':
             case 'FAILED':

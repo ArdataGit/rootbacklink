@@ -26,7 +26,20 @@ class User extends Authenticatable
         'province',
         'city',
         'role',
+        'bank_name',
+        'bank_account_number',
+        'bank_account_name',
+        'balance',
     ];
+
+    public function getWithdrawableBalanceAttribute()
+    {
+        $pendingOrProgressAmount = $this->withdrawals()
+            ->whereIn('status', ['pending', 'on_progress'])
+            ->sum('amount');
+        
+        return $this->balance - $pendingOrProgressAmount;
+    }
 
     public function blogs()
     {
@@ -61,6 +74,12 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'balance' => 'decimal:2',
         ];
+    }
+
+    public function withdrawals()
+    {
+        return $this->hasMany(Withdrawal::class);
     }
 }

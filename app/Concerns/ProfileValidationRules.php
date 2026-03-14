@@ -20,6 +20,9 @@ trait ProfileValidationRules
             'whatsapp' => ['nullable', 'string', 'max:20'],
             'province' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:255'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'bank_account_number' => ['nullable', 'string', 'max:255'],
+            'bank_account_name' => ['nullable', 'string', 'max:255'],
         ];
     }
 
